@@ -104,30 +104,45 @@ export default function PaymentPage() {
   };
 
   // Save order to admin dashboard and complete payment
-  const handleYesClick = () => {
-    // Create new order for admin dashboard
-    const newOrder = {
-      id: `ORD-${Date.now()}`,
-      customerName: customerDetails.name.trim(),
-      items: orderData.items.map((item) => item.name),
-      orderTime: new Date().toISOString(),
-      status: "preparing",
-      phone: customerDetails.phone.trim(),
-      total: orderData.total,
-    };
+  // ✅ FIXED: Proper quantity handling for admin dashboard
+const handleYesClick = () => {
+  // Create expanded items array that represents actual quantities
+  const expandedItems = [];
+  
+  orderData.items.forEach(item => {
+    // Add each item name multiple times based on quantity
+    for (let i = 0; i < item.quantity; i++) {
+      expandedItems.push(item.name);
+    }
+  });
 
-    // Add to admin dashboard active orders
-    const existingOrders = JSON.parse(
-      localStorage.getItem("activeOrders") || "[]"
-    );
-    const updatedOrders = [...existingOrders, newOrder];
-    localStorage.setItem("activeOrders", JSON.stringify(updatedOrders));
+  console.log('💾 Original orderData.items:', orderData.items);
+  console.log('💾 Expanded items for admin:', expandedItems);
 
-    // Clear payment order data
-    localStorage.removeItem("orderData");
-
-    setPaymentComplete(true);
+  // Create new order for admin dashboard
+  const newOrder = {
+    id: `ORD-${Date.now()}`,
+    customerName: customerDetails.name.trim(),
+    items: expandedItems, // ✅ Now contains ["pizza", "pizza", "pizza"] for 3 pizzas
+    orderTime: new Date().toISOString(),
+    status: "preparing",
+    phone: customerDetails.phone.trim(),
+    total: orderData.total,
   };
+
+  // Add to admin dashboard active orders
+  const existingOrders = JSON.parse(
+    localStorage.getItem("activeOrders") || "[]"
+  );
+  const updatedOrders = [...existingOrders, newOrder];
+  localStorage.setItem("activeOrders", JSON.stringify(updatedOrders));
+
+  // Clear payment order data
+  localStorage.removeItem("orderData");
+
+  setPaymentComplete(true);
+};
+
 
   const handleNoClick = () => {
     setPaymentCancelled(true);
