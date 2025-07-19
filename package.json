@@ -9,6 +9,8 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@supabase/ssr": "^0.6.1",
+    "@supabase/supabase-js": "^2.52.0",
     "@vapi-ai/web": "^2.3.8",
     "@yudiel/react-qr-scanner": "^2.3.1",
     "next": "^15.4.1",
