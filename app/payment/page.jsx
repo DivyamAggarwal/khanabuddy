@@ -139,6 +139,8 @@ const handleYesClick = () => {
 
   // Clear payment order data
   localStorage.removeItem("orderData");
+  // Clear payment order data
+  localStorage.removeItem("orderData");
 
   setPaymentComplete(true);
 };

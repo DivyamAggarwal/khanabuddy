@@ -18,16 +18,106 @@ export default function AdminDashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const animationTimeouts = useRef({});
 
-  // ✅ Enhanced: Calculate dynamic totals for orders
+  // ✅ ENHANCED: Helper function to get item price with better error handling
+  const getItemPrice = (itemName) => {
+    const menuItems = {
+      fries: 59,
+      "garlic bread": 99,
+      pasta: 149,
+      salad: 89,
+      burger: 129,
+      pizza: 199,
+      "coca-cola": 50,
+      "cold coffee": 90,
+    };
+    
+    if (!itemName) return 0;
+    const price = menuItems[itemName.toLowerCase().trim()] || 0;
+    console.log(`💰 Price for "${itemName}": ₹${price}`);
+    return price;
+  };
+
+  // ✅ COMPLETELY ENHANCED: Calculate dynamic totals with comprehensive quantity handling
   const calculateOrdersWithDynamicTotals = (ordersList) => {
     return ordersList.map(order => {
-      const { total, itemDetails } = calculateOrderTotal(order.items);
+      console.log('🔍 Processing order:', order.id, 'Items:', order.items);
+      
+      let total = 0;
+      let itemDetails = [];
+      
+      if (!order.items || !Array.isArray(order.items)) {
+        console.warn('⚠️ Order has no valid items array:', order.id);
+        return { ...order, total: 0, itemDetails: [] };
+      }
+
+      // Handle different item formats
+      if (order.items.length > 0 && typeof order.items[0] === 'object' && order.items[0].name) {
+        // Items are already objects with quantities
+        console.log('📦 Processing object format items');
+        itemDetails = order.items;
+        total = order.items.reduce((sum, item) => {
+          const price = item.price || getItemPrice(item.name);
+          const quantity = item.quantity || 1;
+          return sum + (price * quantity);
+        }, 0);
+      } else {
+        // Items are strings - need to aggregate quantities
+        console.log('📝 Processing string format items, aggregating quantities...');
+        const aggregatedItems = {};
+        
+        order.items.forEach((item, index) => {
+          const itemName = (typeof item === 'string' ? item : (item.name || String(item))).toLowerCase().trim();
+          const itemPrice = getItemPrice(itemName);
+          
+          console.log(`  Item ${index + 1}: "${itemName}" (₹${itemPrice})`);
+          
+          if (aggregatedItems[itemName]) {
+            aggregatedItems[itemName].quantity += 1;
+            console.log(`    ➕ Increased quantity to ${aggregatedItems[itemName].quantity}`);
+          } else {
+            aggregatedItems[itemName] = {
+              name: itemName,
+              quantity: 1,
+              price: itemPrice
+            };
+            console.log(`    ✅ Added new item with quantity 1`);
+          }
+          
+          total += itemPrice;
+        });
+        
+        itemDetails = Object.values(aggregatedItems);
+        console.log('📋 Final aggregated items:', itemDetails);
+      }
+      
+      console.log(`💰 Order ${order.id} total: ₹${total}`);
+      
       return {
         ...order,
         total,
         itemDetails
       };
     });
+  };
+
+  // ✅ DEBUG: Add comprehensive order debugging
+  const debugOrderData = () => {
+    console.log('🔍 =========================');
+    console.log('🔍 DEBUG - Current Orders:', orders.length);
+    orders.forEach((order, index) => {
+      console.log(`🔍 Order ${index + 1}:`, {
+        id: order.id,
+        customer: order.customerName,
+        itemsRaw: order.items,
+        itemsType: typeof order.items,
+        itemsLength: order.items?.length,
+        firstItem: order.items?.[0],
+        firstItemType: typeof order.items?.[0],
+        total: order.total,
+        itemDetails: order.itemDetails
+      });
+    });
+    console.log('🔍 =========================');
   };
 
   // ✅ OPTIMIZED: Load orders from localStorage
@@ -188,6 +278,13 @@ export default function AdminDashboard() {
     };
   }, []);
 
+  // ✅ DEBUG: Log orders when they change
+  useEffect(() => {
+    if (orders.length > 0) {
+      debugOrderData();
+    }
+  }, [orders]);
+
   // ✅ OPTIMIZED: Save orders when there are changes
   useEffect(() => {
     if (orders.length > 0) {
@@ -200,6 +297,107 @@ export default function AdminDashboard() {
       }
     }
   }, [orders]);
+
+  // ✅ COMPLETELY ENHANCED: Robust quantity calculation and display
+  const renderOrderItems = (order) => {
+    console.log('🔍 Rendering items for order:', order.id, 'Items:', order.items);
+    
+    // Handle different order.items formats
+    let processedItems = [];
+    
+    if (!order.items || !Array.isArray(order.items)) {
+      console.log('❌ No items or not an array:', order.items);
+      return <span className="text-red-500 text-xs">No items found</span>;
+    }
+
+    // Check if items are already aggregated objects or raw strings
+    if (order.items.length > 0 && typeof order.items[0] === 'object' && order.items[0].name) {
+      // Items are already objects with quantity
+      processedItems = order.items.map(item => ({
+        name: item.name,
+        quantity: item.quantity || 1,
+        price: item.price || getItemPrice(item.name)
+      }));
+      console.log('📦 Using object format:', processedItems);
+    } else {
+      // Items are strings - need to aggregate quantities
+      console.log('📝 Aggregating string format items...');
+      const aggregatedItems = {};
+      
+      order.items.forEach((item, index) => {
+        const cleanItemName = String(item).toLowerCase().trim();
+        console.log(`  Processing item ${index + 1}: "${cleanItemName}"`);
+        
+        if (aggregatedItems[cleanItemName]) {
+          aggregatedItems[cleanItemName].quantity += 1;
+          console.log(`    ➕ Increased to ${aggregatedItems[cleanItemName].quantity}x`);
+        } else {
+          aggregatedItems[cleanItemName] = {
+            name: cleanItemName,
+            quantity: 1,
+            price: getItemPrice(cleanItemName)
+          };
+          console.log(`    ✅ Added new: 1x ${cleanItemName}`);
+        }
+      });
+      
+      processedItems = Object.values(aggregatedItems);
+      console.log('🔢 Final aggregated items:', processedItems);
+    }
+    
+    // Add inventory status and display formatting
+    const itemDetails = processedItems.map(item => {
+      const inventoryItem = inventoryStatus[item.name.toLowerCase()];
+      return {
+        ...item,
+        displayName: item.name.charAt(0).toUpperCase() + item.name.slice(1), // Capitalize first letter
+        isOutOfStock: !inventoryItem || inventoryItem.quantity === 0,
+        isLowStock: inventoryItem && inventoryItem.quantity > 0 && inventoryItem.quantity < 5,
+        price: inventoryItem?.price || item.price || getItemPrice(item.name)
+      };
+    });
+    
+    console.log('✅ Final item details for display:', itemDetails);
+    
+    return (
+      <div className="flex flex-wrap gap-1.5 max-w-xs">
+        {itemDetails.map((item, idx) => {
+          const itemKey = `${order.id}-${item.name}-${idx}`;
+          const isFlashing = flashingItems.has(item.name.toLowerCase());
+          const isLowStock = item.isLowStock && !item.isOutOfStock;
+          
+          return (
+            <span 
+              key={itemKey}
+              className={`inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-medium border transition-all duration-300 ${
+                item.isOutOfStock 
+                  ? "bg-gradient-to-r from-red-100 to-red-200 text-red-800 border-red-300 animate-pulse" 
+                  : isLowStock
+                  ? "bg-gradient-to-r from-yellow-100 to-orange-100 text-orange-800 border-orange-200/50"
+                  : "bg-gradient-to-r from-amber-100 to-orange-100 text-amber-800 border-amber-200/50 hover:from-amber-200 hover:to-orange-200"
+              } ${
+                isFlashing 
+                  ? "animate-pulse bg-gradient-to-r from-green-200 to-emerald-200 text-green-800 border-green-400 shadow-lg transform scale-105" 
+                  : ""
+              }`}
+              style={{
+                animation: isFlashing ? 'flash 0.5s ease-in-out infinite alternate' : 'none'
+              }}
+              title={`${item.displayName} - ${formatCurrency(item.price)} each${item.isOutOfStock ? ' (OUT OF STOCK)' : isLowStock ? ' (LOW STOCK)' : ''}`}
+            >
+              <strong className="text-amber-900 font-bold text-sm bg-amber-200/50 px-1 rounded mr-2">
+                {item.quantity}x
+              </strong>
+              <span>{item.displayName}</span>
+              {item.isOutOfStock && <span className="ml-1">⚠️</span>}
+              {isLowStock && !item.isOutOfStock && <span className="ml-1">⚡</span>}
+              {isFlashing && <span className="ml-1">✨</span>}
+            </span>
+          );
+        })}
+      </div>
+    );
+  };
 
   // Helper functions
   const activeOrders = orders.filter(o => o.status === "preparing" || o.status === "ready");
@@ -264,46 +462,6 @@ export default function AdminDashboard() {
 
   const formatTime = (t) =>
     new Date(t).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true });
-
-  const renderOrderItems = (order) => {
-    const { itemDetails } = calculateOrderTotal(order.items);
-    
-    return (
-      <div className="flex flex-wrap gap-1.5 max-w-xs">
-        {itemDetails.map((item, idx) => {
-          const itemKey = `${order.id}-${item.name}-${idx}`;
-          const isFlashing = flashingItems.has(item.name.toLowerCase());
-          const isLowStock = item.quantity < 5 && !item.isOutOfStock;
-          
-          return (
-            <span 
-              key={itemKey}
-              className={`inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-medium border transition-all duration-300 ${
-                item.isOutOfStock 
-                  ? "bg-gradient-to-r from-red-100 to-red-200 text-red-800 border-red-300 animate-pulse" 
-                  : isLowStock
-                  ? "bg-gradient-to-r from-yellow-100 to-orange-100 text-orange-800 border-orange-200/50"
-                  : "bg-gradient-to-r from-amber-100 to-orange-100 text-amber-800 border-amber-200/50 hover:from-amber-200 hover:to-orange-200"
-              } ${
-                isFlashing 
-                  ? "animate-pulse bg-gradient-to-r from-green-200 to-emerald-200 text-green-800 border-green-400 shadow-lg transform scale-105" 
-                  : ""
-              }`}
-              style={{
-                animation: isFlashing ? 'flash 0.5s ease-in-out infinite alternate' : 'none'
-              }}
-              title={`${item.name} - ${formatCurrency(item.price)} each${item.isOutOfStock ? ' (OUT OF STOCK)' : isLowStock ? ' (LOW STOCK)' : ''}`}
-            >
-              {item.quantity}x {item.name}
-              {item.isOutOfStock && <span className="ml-1">⚠️</span>}
-              {isLowStock && !item.isOutOfStock && <span className="ml-1">⚡</span>}
-              {isFlashing && <span className="ml-1">✨</span>}
-            </span>
-          );
-        })}
-      </div>
-    );
-  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-rose-50">
