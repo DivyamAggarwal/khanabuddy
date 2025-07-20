@@ -255,16 +255,16 @@ export default function LandingPage() {
             )}
 
             {/* ✅ Dynamic Quick Stats */}
-            <div className="grid grid-cols-3 gap-4 mt-6 text-center">
+            {/* <div className="grid grid-cols-3 gap-4 mt-6 text-center">
               <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20">
-                <div className="text-lg md:text-xl font-bold text-white">{totalItems}</div>
-                <div className="text-xs md:text-sm text-white/80">Items</div>
+                <div className="text-lg md:text-xl font-bold text-white">{totalItems}+</div>
+                <div className="text-xs md:text-sm text-white/80">Dishes</div>
               </div>
               <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20">
+                <div className="text-xs md:text-sm text-white/80">Starting From</div>
                 <div className="text-lg md:text-xl font-bold text-yellow-300">
                   {lowestPrice > 0 ? `₹${lowestPrice}` : '₹0'}
                 </div>
-                <div className="text-xs md:text-sm text-white/80">From</div>
               </div>
               <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20">
                 <div className="text-lg md:text-xl font-bold text-green-300">
@@ -274,7 +274,47 @@ export default function LandingPage() {
                   {totalStock > 0 ? 'Always' : 'Coming'}
                 </div>
               </div>
-            </div>
+            </div> */}
+            <div className="grid grid-cols-3 gap-4 mt-6 text-center">
+  {/* Box 1: Menu Variety */}
+  <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20 group hover:bg-white/15 transition-all duration-300">
+    <div className="flex items-center justify-center mb-1">
+      <span className="text-lg mr-1">🍽️</span>
+      <div className="text-lg md:text-xl font-bold text-white">{totalItems}</div>
+    </div>
+    <div className="text-xs md:text-sm text-white/80 font-medium">Menu Items</div>
+    <div className="text-[10px] text-white/60 mt-1">Something for everyone</div>
+  </div>
+
+  {/* Box 2: Pricing */}
+  <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20 group hover:bg-white/15 transition-all duration-300">
+    <div className="text-[10px] md:text-xs text-white/70 font-medium mb-1">Starting From</div>
+    <div className="flex items-center justify-center">
+      <span className="text-sm mr-1">💰</span>
+      <div className="text-lg md:text-xl font-bold text-yellow-300">
+        {lowestPrice > 0 ? `₹${lowestPrice}` : '₹0'}
+      </div>
+    </div>
+    <div className="text-[10px] text-white/60 mt-1">Budget friendly</div>
+  </div>
+
+  {/* Box 3: Freshness */}
+  <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20 group hover:bg-white/15 transition-all duration-300">
+    <div className="flex items-center justify-center mb-1">
+      <span className="text-lg mr-1">{totalStock > 0 ? '✅' : '⏳'}</span>
+      <div className="text-lg md:text-xl font-bold text-green-300">
+        {totalStock > 0 ? 'Fresh' : 'Soon'}
+      </div>
+    </div>
+    <div className="text-xs md:text-sm text-white/80 font-medium">
+      {totalStock > 0 ? 'Made to Order' : 'Coming Soon'}
+    </div>
+    <div className="text-[10px] text-white/60 mt-1">
+      {totalStock > 0 ? 'Zero compromise' : 'Please wait'}
+    </div>
+  </div>
+</div>
+
           </div>
         </div>
 
