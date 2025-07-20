@@ -132,7 +132,7 @@ export default function TodayReport() {
                 </svg>
                 Refresh
               </button>
-              <button
+              {/* <button
                 onClick={handleClearData}
                 className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white px-4 py-2 rounded-2xl font-semibold flex items-center gap-2 shadow-md hover:shadow-lg transition-all duration-300"
               >
@@ -141,7 +141,7 @@ export default function TodayReport() {
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8 7a1 1 0 012 0v6a1 1 0 11-2 0V7zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V7z" clipRule="evenodd"/>
                 </svg>
                 Clear Data
-              </button>
+              </button> */}
             </div>
           </div>
 
