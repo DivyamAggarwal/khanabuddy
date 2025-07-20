@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getInventoryItems } from "../utils/inventoryUtils";
+import { createNewOrder } from "../../lib/orderService";
 
 const END_PHRASES = [
   "my order is done",
@@ -24,19 +25,56 @@ export default function OrderPage() {
   const [done, setDone] = useState(false);
   const [orderList, setOrderList] = useState([]);
   const [showProceedButton, setShowProceedButton] = useState(false);
+  const [cachedInventory, setCachedInventory] = useState([]);
+  const [inventoryLoading, setInventoryLoading] = useState(true);
 
-  // ✅ FLEXIBLE: Smart inventory checking with multiple name variations
+  // ✅ FIXED: Proper inventory loading
+  useEffect(() => {
+    const loadInventory = async () => {
+      try {
+        setInventoryLoading(true);
+        console.log('🚀 Loading inventory from Supabase...');
+        
+        const items = await getInventoryItems();
+        console.log('📦 Loaded items:', items?.length || 0);
+        
+        if (items && Array.isArray(items) && items.length > 0) {
+          setCachedInventory(items);
+          console.log('✅ Inventory cached successfully');
+        } else {
+          console.warn('⚠️ No inventory items found');
+          setCachedInventory([]);
+        }
+      } catch (error) {
+        console.error('❌ Error loading inventory:', error);
+        setCachedInventory([]);
+      } finally {
+        setInventoryLoading(false);
+      }
+    };
+    
+    loadInventory();
+  }, []);
+
+  // ✅ FIXED: Inventory checking with proper error handling
   const checkInventoryItem = (spokenItem) => {
     try {
-      const inventoryItems = getInventoryItems();
+      if (inventoryLoading) {
+        console.log('⏳ Inventory still loading...');
+        return { found: false };
+      }
+      
+      if (!cachedInventory || cachedInventory.length === 0) {
+        console.log('❌ No inventory data available');
+        return { found: false };
+      }
+
       console.log('🔍 Looking for:', spokenItem);
-      console.log('📦 Available inventory:', inventoryItems.map(i => `${i.item_name}: qty=${i.quantity}, price=${i.price}`));
+      console.log('📦 Available inventory:', cachedInventory.map(i => i.item_name));
       
       const spokenLower = spokenItem.toLowerCase();
       
-      // ✅ Create flexible matching patterns
       const matchingPatterns = {
-        // If user says "burger" - could match "burger", "chicken burger", "bbq burger", etc.
         'burger': ['burger', 'chicken burger', 'bbq burger', 'beef burger'],
         'pizza': ['pizza', 'margherita pizza', 'pepperoni pizza', 'cheese pizza'],
         'fries': ['fries', 'french fries', 'loaded fries'],
@@ -52,24 +90,20 @@ export default function OrderPage() {
         'smoothie': ['smoothie']
       };
 
-      // ✅ Find the best match
       let bestMatch = null;
       
-      // First try exact match
-      const exactMatch = inventoryItems.find(item => 
-        item.item_name.toLowerCase() === spokenLower
+      const exactMatch = cachedInventory.find(item => 
+        item.item_name && item.item_name.toLowerCase() === spokenLower
       );
       
       if (exactMatch) {
         console.log('✅ Exact match found:', exactMatch.item_name);
         bestMatch = exactMatch;
       } else {
-        // Try pattern matching
         for (const [pattern, variations] of Object.entries(matchingPatterns)) {
           if (spokenLower === pattern || spokenLower.includes(pattern)) {
-            // Look for any inventory item that matches these variations
-            const foundItem = inventoryItems.find(item => 
-              variations.some(variation => 
+            const foundItem = cachedInventory.find(item => 
+              item.item_name && variations.some(variation => 
                 item.item_name.toLowerCase() === variation ||
                 item.item_name.toLowerCase().includes(variation)
               )
@@ -87,11 +121,11 @@ export default function OrderPage() {
       if (bestMatch) {
         return {
           found: true,
-          available: bestMatch.quantity > 0,
-          price: bestMatch.price,
-          quantity: bestMatch.quantity,
+          available: (bestMatch.quantity || 0) > 0,
+          price: bestMatch.price || 0,
+          quantity: bestMatch.quantity || 0,
           name: bestMatch.item_name,
-          displayName: spokenItem // Keep what user said for display
+          displayName: spokenItem
         };
       }
       
@@ -118,12 +152,15 @@ export default function OrderPage() {
   // SpeechRecognition setup
   useEffect(() => {
     if (typeof window === "undefined") return;
+    if (inventoryLoading) return; // Wait for inventory to load
+
     const SpeechRecognition =
       window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
       alert("Please use Google Chrome — Speech Recognition is not supported.");
       return;
     }
+    
     const recognition = new SpeechRecognition();
     recognition.lang = "en-US";
     recognition.interimResults = false;
@@ -151,10 +188,10 @@ export default function OrderPage() {
       recognition.stop();
       listeningRef.current = false;
     };
-  }, [done, showProceedButton]);
+  }, [done, showProceedButton, inventoryLoading]);
 
   const startListening = () => {
-    if (showProceedButton || done) return;
+    if (showProceedButton || done || inventoryLoading) return;
     try {
       recognitionRef.current?.start();
       listeningRef.current = true;
@@ -190,9 +227,13 @@ export default function OrderPage() {
   };
 
   const handleVoiceInput = (msg) => {
+    if (inventoryLoading) {
+      console.log('⏳ Inventory still loading...');
+      return;
+    }
+
     const lower = msg.toLowerCase();
 
-    // End order phrases
     if (END_PHRASES.some((p) => lower.includes(p))) {
       recognitionRef.current?.stop();
       listeningRef.current = false;
@@ -225,9 +266,7 @@ export default function OrderPage() {
 
     if (done || showProceedButton) return;
 
-    // ✅ Price query
     if (lower.includes("price")) {
-      // Extract item name from price query
       const possibleItems = [
         "burger", "chicken burger", "pizza", "margherita pizza", 
         "fries", "loaded fries", "pasta", "salad", "garlic bread",
@@ -261,10 +300,8 @@ export default function OrderPage() {
       return;
     }
 
-    // Add user message
     setMessages((m) => [...m, { from: "user", text: msg }]);
 
-    // ✅ ENHANCED: Flexible item detection
     const quantityWords = {
       one: 1, two: 2, three: 3, four: 4, five: 5,
       six: 6, seven: 7, eight: 8, nine: 9, ten: 10,
@@ -273,26 +310,21 @@ export default function OrderPage() {
     const isRemove = lower.includes("remove") || lower.includes("cancel");
     const words = lower.split(" ");
 
-    // ✅ Detect items with flexible matching
     const possibleItems = [
       "chicken burger", "margherita pizza", "loaded fries", "garlic bread",
-      "onion rings", "milkshake", "smoothie", // specific items first
-      "burger", "pizza", "fries", "pasta", "salad", "coke","bbq burger","hot dog","veggie wrap" // then general items
+      "onion rings", "milkshake", "smoothie",
+      "burger", "pizza", "fries", "pasta", "salad", "coke","bbq burger","hot dog","veggie wrap"
     ];
     const detectedItems = [];
 
-    // Check for items in order of specificity (specific items first)
     for (const itemName of possibleItems) {
       if (lower.includes(itemName)) {
-        // Find quantity
         let qty = 1;
         const itemWords = itemName.split(" ");
         const itemIndex = words.findIndex((word, index) => {
-          // Check if this position starts the item name
           if (itemWords.length === 1) {
             return word.includes(itemWords[0]);
           } else {
-            // Multi-word item, check if all words match consecutively
             return itemWords.every((itemWord, offset) => 
               words[index + offset] && words[index + offset].includes(itemWord)
             );
@@ -309,19 +341,17 @@ export default function OrderPage() {
         }
         
         detectedItems.push({ name: itemName, quantity: qty });
-        break; // Take the first (most specific) match
+        break;
       }
     }
 
     console.log('🔍 Detected items:', detectedItems);
 
     if (detectedItems.length > 0) {
-      // Process each detected item
       detectedItems.forEach(({ name, quantity }) => {
         const inventoryCheck = checkInventoryItem(name);
         
         if (!inventoryCheck.found || !inventoryCheck.available) {
-          // Item not found or out of stock
           setTimeout(() => {
             setMessages((msgs) => [
               ...msgs,
@@ -331,12 +361,10 @@ export default function OrderPage() {
           return;
         }
 
-        // ✅ Item found and available - use INVENTORY price
         const price = inventoryCheck.price;
-        const actualItemName = inventoryCheck.name; // Real name from inventory
+        const actualItemName = inventoryCheck.name;
         
         if (isRemove) {
-          // Remove logic
           setOrderList((prev) => {
             const existingIndex = prev.findIndex((i) => i.name === actualItemName);
             if (existingIndex === -1) {
@@ -373,7 +401,6 @@ export default function OrderPage() {
             return updated;
           });
         } else {
-          // ✅ Add logic with INVENTORY price
           setOrderList((prev) => {
             const existingIndex = prev.findIndex((i) => i.name === actualItemName);
             let updated = [...prev];
@@ -382,8 +409,8 @@ export default function OrderPage() {
               updated[existingIndex].quantity += quantity;
             } else {
               updated.push({ 
-                name: actualItemName, // Use real inventory name
-                price: price, // Use real inventory price
+                name: actualItemName,
+                price: price,
                 quantity: quantity 
               });
             }
@@ -400,7 +427,6 @@ export default function OrderPage() {
         }
       });
     } else {
-      // No recognized items
       setTimeout(() => {
         setMessages((msgs) => [
           ...msgs,
@@ -411,14 +437,40 @@ export default function OrderPage() {
   };
 
   const handleSend = () => {
-    if (!input.trim() || done || showProceedButton) return;
+    if (!input.trim() || done || showProceedButton || inventoryLoading) return;
     handleVoiceInput(input);
     setInput("");
   };
 
+  // Show loading message while inventory loads
+  if (inventoryLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-rose-50 px-4 pb-12">
+        <header className="bg-white/90 backdrop-blur shadow-md sticky top-0 z-20 py-4 px-6 flex justify-between items-center border-b border-amber-200">
+          <h1 className="text-xl font-bold text-amber-900">
+            🍽️ KhanaBuddy Order Assistant
+          </h1>
+          <button
+            onClick={handleGoBack}
+            className="bg-gradient-to-r from-rose-500 to-orange-400 text-white font-semibold px-5 py-2.5 rounded-xl shadow hover:scale-105 transition"
+          >
+            ⬅ Back
+          </button>
+        </header>
+        
+        <div className="max-w-6xl mx-auto mt-20 text-center">
+          <div className="bg-white rounded-3xl shadow-xl border border-orange-200/50 p-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600 mx-auto mb-4"></div>
+            <h2 className="text-xl font-bold text-amber-900 mb-2">Loading Menu...</h2>
+            <p className="text-amber-700">Please wait while we load the latest menu items from our kitchen.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-rose-50 px-4 pb-12">
-      {/* Header */}
       <header className="bg-white/90 backdrop-blur shadow-md sticky top-0 z-20 py-4 px-6 flex justify-between items-center border-b border-amber-200">
         <h1 className="text-xl font-bold text-amber-900">
           🍽️ KhanaBuddy Order Assistant
@@ -431,9 +483,7 @@ export default function OrderPage() {
         </button>
       </header>
 
-      {/* Main Layout */}
       <div className="max-w-6xl mx-auto mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Chat Box */}
         <section className="col-span-2 bg-white rounded-3xl shadow-xl border border-orange-200/50 p-6 space-y-4">
           <h2 className="text-xl font-bold text-amber-900 mb-2">
             🤖 Chat with KhanaBuddy
@@ -454,7 +504,6 @@ export default function OrderPage() {
             ))}
           </div>
 
-          {/* Show Proceed Button when order is done */}
           {showProceedButton ? (
             <div className="mt-4 text-center">
               <button
@@ -485,7 +534,6 @@ export default function OrderPage() {
           )}
         </section>
 
-        {/* Order Summary */}
         <section className="bg-white p-6 rounded-3xl shadow-xl border border-orange-200/50">
           <h2 className="text-xl font-semibold text-amber-900 mb-4">
             🧾 Your Order

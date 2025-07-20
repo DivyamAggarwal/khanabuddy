@@ -1,4 +1,6 @@
-// ✅ SIMPLIFIED: Generic item name mapping (no varieties)
+import { supabase } from '../../lib/supabase';
+
+// ✅ PRESERVED: Generic item name mapping (no varieties)
 const ITEM_MAPPING = {
   // Voice orders use these names → Maps to inventory names (1:1 mapping)
   "burger": "burger",
@@ -9,7 +11,7 @@ const ITEM_MAPPING = {
   "salad": "salad"
 };
 
-// ✅ SIMPLIFIED: Direct lookup function - simple 1:1 mapping
+// ✅ PRESERVED: Direct lookup function - simple 1:1 mapping
 const getInventoryItemName = (orderItemName) => {
   // First try direct match (exact name from payment)
   const directMatch = orderItemName.trim();
@@ -20,13 +22,21 @@ const getInventoryItemName = (orderItemName) => {
   return mappedName || directMatch;
 };
 
-// ✅ Enhanced: Get inventory items with error handling
-export const getInventoryItems = () => {
+// ✅ MIGRATED: Get inventory items from Supabase (was localStorage)
+export const getInventoryItems = async () => {
   try {
-    const stored = localStorage.getItem('menu');
-    if (stored) {
-      const items = JSON.parse(stored);
-      return items.map(item => ({
+    const { data: stored, error } = await supabase
+      .from('inventory_items')
+      .select('*')
+      .order('item_name', { ascending: true });
+    
+    if (error) {
+      console.error('Error loading inventory items:', error);
+      return [];
+    }
+    
+    if (stored && stored.length > 0) {
+      return stored.map(item => ({
         ...item,
         quantity: item.quantity ?? 0,
         price: item.price ?? 0,
@@ -40,7 +50,7 @@ export const getInventoryItems = () => {
   }
 };
 
-// ✅ SIMPLIFIED: Generic display names only (no varieties)
+// ✅ PRESERVED: Generic display names only (no varieties)
 export const getDisplayName = (itemName) => {
   const nameMap = {
     'pizza': 'pizza',
@@ -53,10 +63,10 @@ export const getDisplayName = (itemName) => {
   return nameMap[itemName.toLowerCase()] || itemName;
 };
 
-// ✅ FIXED: Get current inventory status for dashboard
-export const getCurrentInventoryStatus = () => {
+// ✅ MIGRATED: Get current inventory status for dashboard (now from Supabase)
+export const getCurrentInventoryStatus = async () => {
   try {
-    const menuItems = getInventoryItems();
+    const menuItems = await getInventoryItems();
     
     const getItemStatus = (quantity, minStock = 5) => {
       if (quantity === 0) return "Not Available";
@@ -82,10 +92,10 @@ export const getCurrentInventoryStatus = () => {
   }
 };
 
-// ✅ FIXED: Calculate dynamic order total with corrected item matching
-export const calculateOrderTotal = (orderItems) => {
+// ✅ MIGRATED: Calculate dynamic order total (now from Supabase)
+export const calculateOrderTotal = async (orderItems) => {
   try {
-    const inventoryItems = getInventoryItems();
+    const inventoryItems = await getInventoryItems();
     console.log('🧮 Calculating total for order items:', orderItems);
     console.log('📦 Available inventory items:', inventoryItems.map(i => i.item_name));
     
@@ -103,7 +113,7 @@ export const calculateOrderTotal = (orderItems) => {
     // Count quantities of each item in the order
     const itemCounts = {};
     orderItems.forEach(orderItem => {
-      const normalizedName = orderItem.toLowerCase().trim();
+      const normalizedName = (orderItem.name || orderItem).toLowerCase();
       const inventoryName = getInventoryItemName(orderItem);
       const lookupKey = inventoryName.toLowerCase();
       
@@ -151,17 +161,20 @@ export const calculateOrderTotal = (orderItems) => {
   }
 };
 
-// ✅ FIXED: Reduce inventory quantity with corrected item matching
-export const reduceInventoryQuantity = (orderItems) => {
+// ✅ MIGRATED: Reduce inventory quantity (now updates Supabase)
+export const reduceInventoryQuantity = async (orderItems) => {
   try {
-    const inventoryItems = getInventoryItems();
+    const inventoryItems = await getInventoryItems();
     let updated = false;
     const changedItems = [];
     
     console.log('📉 Reducing inventory for order items:', orderItems);
     console.log('📦 Current inventory:', inventoryItems.map(i => `${i.item_name}: ${i.quantity}`));
 
-    const updatedInventory = inventoryItems.map(inventoryItem => {
+    // Create a copy for updating
+    const updatedInventory = [];
+    
+    for (const inventoryItem of inventoryItems) {
       let newQuantity = inventoryItem.quantity;
       const originalQuantity = inventoryItem.quantity;
       
@@ -169,7 +182,7 @@ export const reduceInventoryQuantity = (orderItems) => {
       orderItems.forEach(orderItem => {
         const inventoryName = getInventoryItemName(orderItem);
         
-        // ✅ FIXED: Direct string comparison with proper normalization
+        // ✅ PRESERVED: Direct string comparison with proper normalization
         if (inventoryName.toLowerCase().trim() === inventoryItem.item_name.toLowerCase().trim()) {
           if (newQuantity > 0) {
             newQuantity -= 1;
@@ -191,17 +204,27 @@ export const reduceInventoryQuantity = (orderItems) => {
         });
       }
       
-      return {
+      const updatedItem = {
         ...inventoryItem,
         quantity: Math.max(0, newQuantity)
       };
-    });
+      
+      updatedInventory.push(updatedItem);
+      
+      // Update individual item in Supabase if quantity changed
+      if (originalQuantity !== newQuantity) {
+        await supabase
+          .from('inventory_items')
+          .update({ 
+            quantity: Math.max(0, newQuantity),
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', inventoryItem.id);
+      }
+    }
 
     if (updated) {
-      // Save updated inventory
-      localStorage.setItem('menu', JSON.stringify(updatedInventory));
-      
-      // Dispatch inventory update event
+      // ✅ PRESERVED: Dispatch inventory update event
       window.dispatchEvent(new CustomEvent('inventoryUpdated', {
         detail: {
           updatedItems: changedItems,
@@ -222,10 +245,10 @@ export const reduceInventoryQuantity = (orderItems) => {
   }
 };
 
-// ✅ FIXED: Check item availability with corrected matching
-export const checkItemAvailability = (orderItems) => {
+// ✅ MIGRATED: Check item availability (now checks Supabase)
+export const checkItemAvailability = async (orderItems) => {
   try {
-    const inventoryItems = getInventoryItems();
+    const inventoryItems = await getInventoryItems();
     const unavailableItems = [];
     
     console.log('🔍 Checking availability for:', orderItems);
@@ -251,18 +274,33 @@ export const checkItemAvailability = (orderItems) => {
   }
 };
 
-// ✅ Enhanced: Save inventory items with comprehensive event tracking
-export const saveInventoryItems = (items, changeDetails = null) => {
+// ✅ MIGRATED: Save inventory items (now saves to Supabase with same event tracking)
+export const saveInventoryItems = async (items, changeDetails = null) => {
   try {
-    const previousItems = getInventoryItems();
-    localStorage.setItem('menu', JSON.stringify(items));
+    const previousItems = await getInventoryItems();
     
+    // Batch update/insert items to Supabase
+    for (const item of items) {
+      await supabase
+        .from('inventory_items')
+        .upsert({
+          id: item.id,
+          item_name: item.item_name,
+          price: item.price,
+          quantity: item.quantity,
+          min_stock: item.min_stock
+        }, { 
+          onConflict: 'id' 
+        });
+    }
+    
+    // ✅ PRESERVED: All the same event tracking logic
     const newlyAvailableItems = [];
     const updatedItems = [];
     const removedItems = [];
     
     items.forEach(currentItem => {
-      const previousItem = previousItems.find(prev => prev.item_id === currentItem.item_id);
+      const previousItem = previousItems.find(prev => prev.id === currentItem.id);
       const displayName = getDisplayName(currentItem.item_name);
       
       if (previousItem) {
@@ -302,12 +340,13 @@ export const saveInventoryItems = (items, changeDetails = null) => {
     });
     
     previousItems.forEach(previousItem => {
-      const stillExists = items.find(item => item.item_id === previousItem.item_id);
+      const stillExists = items.find(item => item.id === previousItem.id);
       if (!stillExists) {
         removedItems.push(getDisplayName(previousItem.item_name));
       }
     });
     
+    // ✅ PRESERVED: All the same event dispatching
     const eventDetail = {
       newlyAvailableItems,
       updatedItems,
@@ -357,7 +396,7 @@ export const saveInventoryItems = (items, changeDetails = null) => {
   }
 };
 
-// ✅ Enhanced: Format currency utility
+// ✅ PRESERVED: Format currency utility (unchanged)
 export const formatCurrency = (amount) => {
   try {
     return new Intl.NumberFormat('en-IN', {
