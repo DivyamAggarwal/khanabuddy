@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import QRCode from "qrcode";
+import { createNewOrder } from "../../lib/orderService";
 
 export default function PaymentPage() {
   const router = useRouter();
@@ -105,7 +106,46 @@ export default function PaymentPage() {
 
   // Save order to admin dashboard and complete payment
   // ✅ FIXED: Proper quantity handling for admin dashboard
-const handleYesClick = () => {
+// const handleYesClick = () => {
+//   // Create expanded items array that represents actual quantities
+//   const expandedItems = [];
+  
+//   orderData.items.forEach(item => {
+//     // Add each item name multiple times based on quantity
+//     for (let i = 0; i < item.quantity; i++) {
+//       expandedItems.push(item.name);
+//     }
+//   });
+
+//   console.log('💾 Original orderData.items:', orderData.items);
+//   console.log('💾 Expanded items for admin:', expandedItems);
+
+//   // Create new order for admin dashboard
+//   const newOrder = {
+//     id: `ORD-${Date.now()}`,
+//     customerName: customerDetails.name.trim(),
+//     items: expandedItems, // ✅ Now contains ["pizza", "pizza", "pizza"] for 3 pizzas
+//     orderTime: new Date().toISOString(),
+//     status: "preparing",
+//     phone: customerDetails.phone.trim(),
+//     total: orderData.total,
+//   };
+
+//   // Add to admin dashboard active orders
+//   const existingOrders = JSON.parse(
+//     localStorage.getItem("activeOrders") || "[]"
+//   );
+//   const updatedOrders = [...existingOrders, newOrder];
+//   localStorage.setItem("activeOrders", JSON.stringify(updatedOrders));
+
+//   // Clear payment order data
+//   localStorage.removeItem("orderData");
+//   // Clear payment order data
+//   localStorage.removeItem("orderData");
+
+//   setPaymentComplete(true);
+// };
+const handleYesClick = async () => {
   // Create expanded items array that represents actual quantities
   const expandedItems = [];
   
@@ -119,31 +159,41 @@ const handleYesClick = () => {
   console.log('💾 Original orderData.items:', orderData.items);
   console.log('💾 Expanded items for admin:', expandedItems);
 
-  // Create new order for admin dashboard
-  const newOrder = {
-    id: `ORD-${Date.now()}`,
-    customerName: customerDetails.name.trim(),
-    items: expandedItems, // ✅ Now contains ["pizza", "pizza", "pizza"] for 3 pizzas
-    orderTime: new Date().toISOString(),
-    status: "preparing",
-    phone: customerDetails.phone.trim(),
-    total: orderData.total,
-  };
+  try {
+    // ✅ SAVE TO SUPABASE instead of localStorage
+    const orderData_supabase = {
+      customer_name: customerDetails.name.trim(),
+      customer_phone: customerDetails.phone.trim(),
+      special_instructions: "Payment confirmed order"
+    };
 
-  // Add to admin dashboard active orders
-  const existingOrders = JSON.parse(
-    localStorage.getItem("activeOrders") || "[]"
-  );
-  const updatedOrders = [...existingOrders, newOrder];
-  localStorage.setItem("activeOrders", JSON.stringify(updatedOrders));
+    const orderItems = orderData.items.map(item => ({
+      item_name: item.name,
+      quantity: item.quantity,
+      unit_price: item.price
+    }));
 
-  // Clear payment order data
-  localStorage.removeItem("orderData");
-  // Clear payment order data
-  localStorage.removeItem("orderData");
+    console.log('🚀 Saving to Supabase:', { orderData_supabase, orderItems });
 
-  setPaymentComplete(true);
+    const result = await createNewOrder(orderData_supabase, orderItems);
+    
+    if (result.success) {
+      console.log('✅ Order saved to Supabase successfully! Order ID:', result.order.id);
+      
+      // Clear payment order data
+      localStorage.removeItem("orderData");
+      
+      setPaymentComplete(true);
+    } else {
+      console.error('❌ Failed to save order to Supabase:', result.error);
+      alert(`Error saving order: ${result.error}. Please try again.`);
+    }
+  } catch (error) {
+    console.error('❌ Error saving order to Supabase:', error);
+    alert("Technical error saving order. Please try again.");
+  }
 };
+
   const handleNoClick = () => {
     setPaymentCancelled(true);
   };
