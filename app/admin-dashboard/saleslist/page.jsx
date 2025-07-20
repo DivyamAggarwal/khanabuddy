@@ -2,7 +2,12 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import AdminNavbar from "../../_components/adminNavbar";
-import { getTodayStats, getDeliveredOrders, formatCurrency } from "../../utils/localStorage";
+// REMOVE this line
+// import { getTodayStats, getDeliveredOrders, formatCurrency } from "../../utils/localStorage";
+
+// REPLACE with Supabase imports (same as your today report)
+import { getTodaysReport, getDeliveredOrders } from "../../../lib/reportService";
+
 import {
   LineChart,
   Line,
@@ -59,29 +64,78 @@ export default function SalesList() {
   }, []);
 
   // Load ONLY real orders from localStorage (no fake data)
-  useEffect(() => {
-    const loadRealOrdersData = () => {
-      try {
-        // Get today's stats and all delivered orders from localStorage only
-        const stats = getTodayStats();
-        const allDeliveredOrders = getDeliveredOrders();
+  // useEffect(() => {
+  //   const loadRealOrdersData = () => {
+  //     try {
+  //       // Get today's stats and all delivered orders from localStorage only
+  //       const stats = getTodaysReport();
+  //       const allDeliveredOrders = getDeliveredOrders();
         
-        setTodayStats(stats);
-        setDeliveredOrders(allDeliveredOrders); // Only real data
+  //       setTodayStats(stats);
+  //       setDeliveredOrders(allDeliveredOrders); // Only real data
         
-        console.log('Real orders loaded:', allDeliveredOrders.length);
-      } catch (error) {
-        console.error('Error loading orders data:', error);
-        setDeliveredOrders([]); // Empty array if error
-      }
-    };
+  //       console.log('Real orders loaded:', allDeliveredOrders.length);
+  //     } catch (error) {
+  //       console.error('Error loading orders data:', error);
+  //       setDeliveredOrders([]); // Empty array if error
+  //     }
+  //   };
 
-    loadRealOrdersData();
+  //   loadRealOrdersData();
     
-    // Set up interval to refresh data every 30 seconds
-    const interval = setInterval(loadRealOrdersData, 30000);
-    return () => clearInterval(interval);
-  }, []);
+  //   // Set up interval to refresh data every 30 seconds
+  //   const interval = setInterval(loadRealOrdersData, 30000);
+  //   return () => clearInterval(interval);
+  // }, []);
+  // Replace the entire "Load ONLY real orders from localStorage" useEffect with this:
+// Load real orders from Supabase (preserving all original functionality)
+useEffect(() => {
+  const loadRealOrdersData = async () => {
+    try {
+      // Get today's stats from Supabase
+      const todayResult = await getTodaysReport();
+      if (todayResult.success) {
+        setTodayStats(todayResult.data);
+      } else {
+        // Fallback stats if today's report fails
+        setTodayStats({
+          totalOrders: 0,
+          totalRevenue: 0,
+          avgOrderValue: 0,
+          orders: []
+        });
+      }
+
+      // Get all delivered orders from Supabase for historical charts
+      const ordersResult = await getDeliveredOrders();
+      if (ordersResult.success) {
+        setDeliveredOrders(ordersResult.data);
+        console.log('✅ Loaded from Supabase:', ordersResult.data.length, 'orders');
+      } else {
+        console.error('❌ Failed to load orders from Supabase:', ordersResult.error);
+        setDeliveredOrders([]);
+      }
+      
+    } catch (error) {
+      console.error('Error loading orders data from Supabase:', error);
+      // Set fallback data to prevent crashes
+      setDeliveredOrders([]);
+      setTodayStats({
+        totalOrders: 0,
+        totalRevenue: 0,
+        avgOrderValue: 0,
+        orders: []
+      });
+    }
+  };
+
+  loadRealOrdersData();
+  
+  // Set up interval to refresh data every 30 seconds (same as before)
+  const interval = setInterval(loadRealOrdersData, 30000);
+  return () => clearInterval(interval);
+}, []);
+
 
   // Calculate revenue for header based on real data only
   const getHeaderRevenue = () => {
@@ -113,48 +167,109 @@ export default function SalesList() {
 
     return 0;
   };
+  // Add this function at the top of your component, before the export default function
+const formatCurrency = (amount) => {
+  return new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+  }).format(amount);
+};
 
   const getHeaderRevenueLabel = () => {
     return headerRevenueRange === "monthly" ? "Total Revenue Monthly" : "Total Revenue Yearly";
   };
 
   // Process sales data for line chart with real data only
+  // const getSalesData = () => {
+  //   const salesMap = new Map();
+
+  //   deliveredOrders.forEach((order) => {
+  //     // Use deliveredTime if available, otherwise orderTime
+  //     const date = new Date(order.deliveredTime || order.orderTime);
+  //     let key;
+
+  //     switch (timeRange) {
+  //       case "daily":
+  //         key = date.toISOString().split("T")[0];
+  //         break;
+  //       case "monthly":
+  //         key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+  //         break;
+  //       case "yearly":
+  //         key = date.getFullYear().toString();
+  //         break;
+  //       default:
+  //         key = date.toISOString().split("T")[0];
+  //     }
+
+  //     if (salesMap.has(key)) {
+  //       salesMap.set(key, salesMap.get(key) + order.total);
+  //     } else {
+  //       salesMap.set(key, order.total);
+  //     }
+  //   });
+
+  //   return Array.from(salesMap.entries())
+  //     .map(([date, revenue]) => ({
+  //       date,
+  //       revenue: parseFloat(revenue.toFixed(2)),
+  //     }))
+  //     .sort((a, b) => a.date.localeCompare(b.date));
+  // };
   const getSalesData = () => {
-    const salesMap = new Map();
+  const salesMap = new Map();
 
-    deliveredOrders.forEach((order) => {
-      // Use deliveredTime if available, otherwise orderTime
-      const date = new Date(order.deliveredTime || order.orderTime);
-      let key;
+  deliveredOrders.forEach((order) => {
+    const date = new Date(order.deliveredTime || order.orderTime);
+    let key;
 
-      switch (timeRange) {
-        case "daily":
-          key = date.toISOString().split("T")[0];
-          break;
-        case "monthly":
-          key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
-          break;
-        case "yearly":
-          key = date.getFullYear().toString();
-          break;
-        default:
-          key = date.toISOString().split("T")[0];
-      }
+    switch (timeRange) {
+      case "daily":
+        // Use IST timezone for consistent daily grouping
+        key = date.toLocaleDateString("en-CA", { 
+          timeZone: "Asia/Kolkata" 
+        }); // Returns YYYY-MM-DD format in IST
+        break;
+      case "monthly":
+        const year = date.toLocaleDateString("en-US", { 
+          year: "numeric", 
+          timeZone: "Asia/Kolkata" 
+        });
+        const month = date.toLocaleDateString("en-US", { 
+          month: "2-digit", 
+          timeZone: "Asia/Kolkata" 
+        });
+        key = `${year}-${month}`;
+        break;
+      case "yearly":
+        key = date.toLocaleDateString("en-US", { 
+          year: "numeric", 
+          timeZone: "Asia/Kolkata" 
+        });
+        break;
+      default:
+        key = date.toLocaleDateString("en-CA", { 
+          timeZone: "Asia/Kolkata" 
+        });
+    }
 
-      if (salesMap.has(key)) {
-        salesMap.set(key, salesMap.get(key) + order.total);
-      } else {
-        salesMap.set(key, order.total);
-      }
-    });
+    if (salesMap.has(key)) {
+      salesMap.set(key, salesMap.get(key) + order.total);
+    } else {
+      salesMap.set(key, order.total);
+    }
+  });
 
-    return Array.from(salesMap.entries())
-      .map(([date, revenue]) => ({
-        date,
-        revenue: parseFloat(revenue.toFixed(2)),
-      }))
-      .sort((a, b) => a.date.localeCompare(b.date));
-  };
+  console.log('IST Sales data processed:', Array.from(salesMap.entries()));
+
+  return Array.from(salesMap.entries())
+    .map(([date, revenue]) => ({
+      date,
+      revenue: parseFloat(revenue.toFixed(2)),
+    }))
+    .sort((a, b) => a.date.localeCompare(b.date));
+};
+
 
   // Process item popularity data with percentages
   const getItemPopularityData = () => {
@@ -200,29 +315,59 @@ export default function SalesList() {
     return [adjustedMin, adjustedMax];
   };
 
-  const formatChartDate = (dateString) => {
-    const date = new Date(dateString);
-    switch (timeRange) {
-      case "daily":
-        return date.toLocaleDateString("en-IN", {
-          month: "short",
-          day: "numeric",
-          timeZone: "Asia/Kolkata",
-        });
-      case "monthly":
-        return date.toLocaleDateString("en-IN", {
-          month: "short",
-          year: "numeric",
-          timeZone: "Asia/Kolkata",
-        });
-      case "yearly":
-        return date.getFullYear().toString();
-      default:
-        return dateString;
-    }
-  };
+  // const formatChartDate = (dateString) => {
+  //   const date = new Date(dateString);
+  //   switch (timeRange) {
+  //     case "daily":
+  //       return date.toLocaleDateString("en-IN", {
+  //         month: "short",
+  //         day: "numeric",
+  //         timeZone: "Asia/Kolkata",
+  //       });
+  //     case "monthly":
+  //       return date.toLocaleDateString("en-IN", {
+  //         month: "short",
+  //         year: "numeric",
+  //         timeZone: "Asia/Kolkata",
+  //       });
+  //     case "yearly":
+  //       return date.getFullYear().toString();
+  //     default:
+  //       return dateString;
+  //   }
+  // };
 
   // Enhanced color palette for pie chart
+  const formatChartDate = (dateString) => {
+  // Parse the date string and create a proper date object
+  const date = new Date(dateString + 'T00:00:00');
+  
+  switch (timeRange) {
+    case "daily":
+      return date.toLocaleDateString("en-IN", {
+        month: "short",
+        day: "numeric",
+        timeZone: "Asia/Kolkata",
+      });
+    case "monthly":
+      const [year, month] = dateString.split('-');
+      const monthDate = new Date(year, month - 1, 1);
+      return monthDate.toLocaleDateString("en-IN", {
+        month: "short",
+        year: "numeric",
+        timeZone: "Asia/Kolkata",
+      });
+    case "yearly":
+      return dateString;
+    default:
+      return date.toLocaleDateString("en-IN", {
+        month: "short", 
+        day: "numeric",
+        timeZone: "Asia/Kolkata"
+      });
+  }
+};
+
   const COLORS = [
     "#10B981", "#F59E0B", "#EF4444", "#3B82F6", "#8B5CF6", 
     "#F97316", "#06B6D4", "#84CC16", "#EC4899", "#6B7280",
