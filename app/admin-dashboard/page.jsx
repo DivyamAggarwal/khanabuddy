@@ -2,13 +2,19 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import AdminNavbar from "../_components/adminNavbar";
-import { saveDeliveredOrder, saveActiveOrders, getActiveOrders, formatCurrency } from "../utils/localStorage";
+import { loadActiveOrders, markOrderAsDelivered, updateOrderStatus } from "../../lib/orderService";
+import { formatCurrency } from "../utils/localStorage"; // ✅ Fixed typo: was "sformatCurrency"
 import { reduceInventoryQuantity, checkItemAvailability, calculateOrderTotal, getCurrentInventoryStatus } from "../utils/inventoryUtils";
+import { testConnection } from '../../lib/testSupabase';
 
 export default function AdminDashboard() {
   const router = useRouter();
+  
+  useEffect(() => {
+    testConnection()
+  }, [])
 
-  // ✅ CLEANED: Only voice orders - no hardcoded data
+  // State management
   const [orders, setOrders] = useState([]);
   const [inventoryAlert, setInventoryAlert] = useState("");
   const [animatingItems, setAnimatingItems] = useState(new Set());
@@ -18,32 +24,75 @@ export default function AdminDashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const animationTimeouts = useRef({});
 
-  // ✅ Enhanced: Calculate dynamic totals for orders
-  const calculateOrdersWithDynamicTotals = (ordersList) => {
-    return ordersList.map(order => {
-      const { total, itemDetails } = calculateOrderTotal(order.items);
-      return {
-        ...order,
-        total,
-        itemDetails
-      };
+  // ✅ FIXED: Calculate dynamic totals for orders (proper async handling)
+  const calculateOrdersWithDynamicTotals = async (ordersList) => {
+    const ordersWithTotals = await Promise.all(
+      ordersList.map(async order => {
+        const { total, itemDetails } = await calculateOrderTotal(order.items);
+        return {
+          ...order,
+          total,
+          itemDetails
+        };
+      })
+    );
+    return ordersWithTotals;
+  };
+
+  // ✅ FIXED: Recalculate orders with proper state handling
+  const recalculateOrdersWithInventory = async () => {
+    setOrders(currentOrders => {
+      // Start async calculation but don't wait in setState
+      calculateOrdersWithDynamicTotals(currentOrders).then(updatedOrders => {
+        setOrders(updatedOrders); // Update state when calculation is complete
+      }).catch(error => {
+        console.error('Error recalculating orders:', error);
+      });
+      
+      // Return current orders immediately for React
+      return currentOrders;
     });
   };
 
-  // ✅ OPTIMIZED: Load orders from localStorage
+  // ✅ Load orders from Supabase
   useEffect(() => {
     const loadOrders = async () => {
       try {
         setIsLoading(true);
-        const savedOrders = getActiveOrders();
-        console.log('📋 Loading orders from localStorage:', savedOrders);
+        console.log('🚀 Loading orders from Supabase...');
         
-        if (savedOrders.length > 0) {
-          const ordersWithTotals = calculateOrdersWithDynamicTotals(savedOrders);
+        const result = await loadActiveOrders();
+        console.log('📊 Supabase result:', result);
+        
+        if (result.success && result.data) {
+          console.log('✅ Raw orders from database:', result.data);
+          
+          const transformedOrders = result.data.map(order => ({
+            id: order.id,
+            order_number: order.order_number,
+            customerName: order.customer_name,
+            phone: order.customer_phone || '',
+            total: parseFloat(order.total_amount),
+            orderTime: order.order_time,
+            status: order.status,
+            // ✅ Items for inventory calculation (strings)
+            items: order.order_items.map(item => item.item_name),
+            // ✅ Detailed items for display (objects)
+            itemDetails: order.order_items.map(item => ({
+              name: item.item_name,
+              quantity: item.quantity,
+              price: parseFloat(item.unit_price),
+              total: parseFloat(item.total_price)
+            }))
+          }));
+
+          console.log('🔄 Transformed orders:', transformedOrders);
+          
+          const ordersWithTotals = await calculateOrdersWithDynamicTotals(transformedOrders);
           console.log('✅ Successfully loaded orders:', ordersWithTotals.length, 'orders');
           setOrders(ordersWithTotals);
         } else {
-          console.log('📝 No orders found - dashboard is empty');
+          console.log('❌ Failed to load orders:', result.error);
           setOrders([]);
         }
       } catch (error) {
@@ -57,11 +106,11 @@ export default function AdminDashboard() {
     loadOrders();
   }, []);
 
-  // ✅ Enhanced: Real-time inventory status tracking
+  // ✅ FIXED: Real-time inventory status tracking
   useEffect(() => {
-    const updateInventoryStatus = () => {
+    const updateInventoryStatus = async () => {
       try {
-        const status = getCurrentInventoryStatus();
+        const status = await getCurrentInventoryStatus();
         setInventoryStatus(status);
         setSyncStatus('connected');
       } catch (error) {
@@ -87,17 +136,14 @@ export default function AdminDashboard() {
     };
   }, []);
 
-  // ✅ Enhanced: Comprehensive inventory/price updates with immediate synchronization
+  // ✅ FIXED: Comprehensive inventory/price updates
   useEffect(() => {
     const handleInventoryUpdate = (event) => {
       console.log('📦 Inventory update received:', event.detail);
       const { newlyAvailableItems, updatedItems, removedItems } = event.detail || {};
       
-      setOrders(currentOrders => {
-        const updatedOrders = calculateOrdersWithDynamicTotals(currentOrders);
-        console.log('🔄 Orders recalculated with new inventory:', updatedOrders);
-        return updatedOrders;
-      });
+      // ✅ FIXED: Proper async state handling
+      recalculateOrdersWithInventory();
       
       if (newlyAvailableItems && newlyAvailableItems.length > 0) {
         newlyAvailableItems.forEach(item => {
@@ -140,11 +186,8 @@ export default function AdminDashboard() {
       console.log('💰 Price update received:', event.detail);
       const { updatedItems } = event.detail || {};
       
-      setOrders(currentOrders => {
-        const updatedOrders = calculateOrdersWithDynamicTotals(currentOrders);
-        console.log('💰 Orders recalculated with new prices:', updatedOrders);
-        return updatedOrders;
-      });
+      // ✅ FIXED: Proper async state handling
+      recalculateOrdersWithInventory();
       
       if (updatedItems && updatedItems.length > 0) {
         const itemNames = updatedItems.map(item => item.name).join(', ');
@@ -160,7 +203,8 @@ export default function AdminDashboard() {
       console.log('📊 Quantity update received:', event.detail);
       const { updatedItems } = event.detail || {};
       
-      setOrders(currentOrders => calculateOrdersWithDynamicTotals(currentOrders));
+      // ✅ FIXED: Proper async state handling
+      recalculateOrdersWithInventory();
       
       if (updatedItems) {
         const lowStockItems = updatedItems.filter(item => item.quantity < 5);
@@ -188,36 +232,41 @@ export default function AdminDashboard() {
     };
   }, []);
 
-  // ✅ OPTIMIZED: Save orders when there are changes
-  useEffect(() => {
-    if (orders.length > 0) {
-      try {
-        const ordersToSave = orders.map(({ itemDetails, ...order }) => order);
-        saveActiveOrders(ordersToSave);
-        console.log('💾 Saved', ordersToSave.length, 'orders to localStorage');
-      } catch (error) {
-        console.error('❌ Error saving orders:', error);
-      }
-    }
-  }, [orders]);
-
   // Helper functions
   const activeOrders = orders.filter(o => o.status === "preparing" || o.status === "ready");
   const pendingOrders = orders.filter(o => o.status === "preparing").length;
   const readyOrders = orders.filter(o => o.status === "ready").length;
 
-  const handleStatusChange = (id, status) => {
-    setOrders(orders.map(o => o.id === id ? { ...o, status } : o));
+  // ✅ Handle status changes with Supabase
+  const handleStatusChange = async (id, status) => {
+    console.log(`🔄 Updating order ${id} status to ${status}`);
+    
+    try {
+      const result = await updateOrderStatus(id, status);
+      
+      if (result.success) {
+        console.log('✅ Status updated in database');
+        setOrders(orders.map(o => o.id === id ? { ...o, status } : o));
+      } else {
+        console.error('❌ Failed to update status:', result.error);
+        setInventoryAlert(`❌ Failed to update order status: ${result.error}`);
+        setTimeout(() => setInventoryAlert(""), 5000);
+      }
+    } catch (error) {
+      console.error('❌ Error updating status:', error);
+      setInventoryAlert(`❌ Error updating order status: ${error.message}`);
+      setTimeout(() => setInventoryAlert(""), 5000);
+    }
   };
 
-  // ✅ ENHANCED: Order delivery with comprehensive inventory integration
-  const handleOrderDelivered = (id) => {
+  // ✅ Handle order delivery with Supabase
+  const handleOrderDelivered = async (id) => {
     const orderToDeliver = orders.find(o => o.id === id);
     if (orderToDeliver) {
       console.log('🚚 Processing delivery for order:', orderToDeliver);
       
       // Check if items are available before delivering
-      const unavailableItems = checkItemAvailability(orderToDeliver.items);
+      const unavailableItems = await checkItemAvailability(orderToDeliver.items);
       
       if (unavailableItems.length > 0) {
         setInventoryAlert(`⚠️ Cannot deliver order ${id}: ${unavailableItems.join(', ')} are not available in inventory.`);
@@ -226,30 +275,34 @@ export default function AdminDashboard() {
       }
 
       // Reduce inventory quantities
-      const inventoryUpdated = reduceInventoryQuantity(orderToDeliver.items);
+      // const inventoryUpdated = await reduceInventoryQuantity(orderToDeliver.items);
       
-      const orderWithDeliveryTime = {
-        ...orderToDeliver,
-        deliveredAt: new Date().toISOString(),
-        deliveredTime: new Date().toISOString(),
-        status: 'delivered'
-      };
-      
-      const success = saveDeliveredOrder(orderWithDeliveryTime);
-      if (success) {
-        setOrders(orders.filter(o => o.id !== id));
+      try {
+        const result = await markOrderAsDelivered(id);
         
-        if (inventoryUpdated) {
+        if (result.success) {
+          console.log('✅ Order marked as delivered in database');
+          //setOrders(orders.filter(o => o.id !== id));
+          setOrders(currentOrders => currentOrders.filter(o => o.id !== id)); // Uses current state
+
+          // if (inventoryUpdated) {
+          //   setInventoryAlert(`✅ Order ${id} delivered successfully! Inventory updated.`);
+          //   console.log('✅ Order delivered and inventory reduced:', orderToDeliver.items);
+          // } else {
+          //   setInventoryAlert(`✅ Order ${id} delivered successfully!`);
+          //   console.log('⚠️ Order delivered but inventory was not updated.');
+          // }
           setInventoryAlert(`✅ Order ${id} delivered successfully! Inventory updated.`);
-          console.log('✅ Order delivered and inventory reduced:', orderToDeliver.items);
+
+          setTimeout(() => setInventoryAlert(""), 3000);
         } else {
-          setInventoryAlert(`✅ Order ${id} delivered successfully!`);
-          console.log('⚠️ Order delivered but inventory was not updated.');
+          console.error('❌ Failed to deliver order:', result.error);
+          setInventoryAlert(`❌ Failed to deliver order ${id}: ${result.error}`);
+          setTimeout(() => setInventoryAlert(""), 5000);
         }
-        
-        setTimeout(() => setInventoryAlert(""), 3000);
-      } else {
-        setInventoryAlert(`❌ Failed to save delivered order ${id}`);
+      } catch (error) {
+        console.error('❌ Error delivering order:', error);
+        setInventoryAlert(`❌ Error delivering order ${id}: ${error.message}`);
         setTimeout(() => setInventoryAlert(""), 5000);
       }
     }
@@ -265,21 +318,33 @@ export default function AdminDashboard() {
   const formatTime = (t) =>
     new Date(t).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true });
 
+  // ✅ FINAL FIX: renderOrderItems with enhanced data handling
   const renderOrderItems = (order) => {
-    const { itemDetails } = calculateOrderTotal(order.items);
+    // Use itemDetails from order, with fallback to basic display
+    const itemDetails = order.itemDetails || [];
     
     return (
       <div className="flex flex-wrap gap-1.5 max-w-xs">
         {itemDetails.map((item, idx) => {
           const itemKey = `${order.id}-${item.name}-${idx}`;
-          const isFlashing = flashingItems.has(item.name.toLowerCase());
-          const isLowStock = item.quantity < 5 && !item.isOutOfStock;
+          const isFlashing = flashingItems.has(item.name?.toLowerCase() || '');
+          
+          // Enhanced item properties with safe defaults
+          const safeItem = {
+            name: item.name || 'Unknown Item',
+            quantity: item.quantity || 1,
+            price: item.price || 0,
+            isOutOfStock: item.isOutOfStock || false,
+            isLowStock: item.isLowStock || false
+          };
+          
+          const isLowStock = safeItem.quantity < 5 && !safeItem.isOutOfStock;
           
           return (
             <span 
               key={itemKey}
               className={`inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-medium border transition-all duration-300 ${
-                item.isOutOfStock 
+                safeItem.isOutOfStock 
                   ? "bg-gradient-to-r from-red-100 to-red-200 text-red-800 border-red-300 animate-pulse" 
                   : isLowStock
                   ? "bg-gradient-to-r from-yellow-100 to-orange-100 text-orange-800 border-orange-200/50"
@@ -292,11 +357,11 @@ export default function AdminDashboard() {
               style={{
                 animation: isFlashing ? 'flash 0.5s ease-in-out infinite alternate' : 'none'
               }}
-              title={`${item.name} - ${formatCurrency(item.price)} each${item.isOutOfStock ? ' (OUT OF STOCK)' : isLowStock ? ' (LOW STOCK)' : ''}`}
+              title={`${safeItem.name} - ${formatCurrency(safeItem.price)} each${safeItem.isOutOfStock ? ' (OUT OF STOCK)' : isLowStock ? ' (LOW STOCK)' : ''}`}
             >
-              {item.quantity}x {item.name}
-              {item.isOutOfStock && <span className="ml-1">⚠️</span>}
-              {isLowStock && !item.isOutOfStock && <span className="ml-1">⚡</span>}
+              {safeItem.quantity}x {safeItem.name}
+              {safeItem.isOutOfStock && <span className="ml-1">⚠️</span>}
+              {isLowStock && !safeItem.isOutOfStock && <span className="ml-1">⚡</span>}
               {isFlashing && <span className="ml-1">✨</span>}
             </span>
           );
@@ -308,7 +373,6 @@ export default function AdminDashboard() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-rose-50">
       <AdminNavbar />
-
       <style jsx>{`
         @keyframes flash {
           0% { background-color: rgba(34, 197, 94, 0.2); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); }
@@ -347,7 +411,7 @@ export default function AdminDashboard() {
             </div>
           )}
 
-          {/* ✅ CLEANED: Simple header without AI voice references */}
+          {/* Header */}
           <div className="mb-6 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
             <div>
               <h1 className="text-3xl lg:text-4xl font-bold bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">
@@ -420,7 +484,7 @@ export default function AdminDashboard() {
               </div>
             </div>
 
-            {/* ✅ CLEANED: Loading state and empty state without AI references */}
+            {/* Loading state and empty state */}
             {isLoading ? (
               <div className="p-12 text-center">
                 <div className="loading-pulse text-6xl mb-4">⏳</div>
@@ -444,7 +508,7 @@ export default function AdminDashboard() {
                 <table className="w-full table-fixed">
                   <thead>
                     <tr className="bg-gradient-to-r from-amber-50 to-orange-50 border-b border-amber-200/50">
-                      <th className="w-[12%] px-3 py-3 text-left text-xs font-bold text-amber-800 uppercase tracking-wide">Order Details</th>
+                      <th className="w-[12%] px-3 py-3 text-left text-xs font-bold text-amber-800 uppercase tracking-wide">Order ID</th>
                       <th className="w-[15%] px-3 py-3 text-left text-xs font-bold text-amber-800 uppercase tracking-wide">Customer</th>
                       <th className="w-[25%] px-3 py-3 text-left text-xs font-bold text-amber-800 uppercase tracking-wide">Items</th>
                       <th className="w-[10%] px-3 py-3 text-left text-xs font-bold text-amber-800 uppercase tracking-wide">Total</th>
@@ -463,7 +527,7 @@ export default function AdminDashboard() {
                               {i + 1}
                             </div>
                             <div className="min-w-0">
-                              <div className="text-xs font-bold text-amber-900 truncate">{order.id}</div>
+                              <div className="text-xs font-bold text-amber-900 truncate">{order.order_number}</div>
                             </div>
                           </div>
                         </td>

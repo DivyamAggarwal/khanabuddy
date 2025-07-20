@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import AdminNavbar from "../../_components/adminNavbar";
+import { loadInventoryItems, addInventoryItem, updateInventoryItem, deleteInventoryItem } from "../../../lib/inventoryService";
 
 export default function InventoryPage() {
   const [menuItems, setMenuItems] = useState([]);
@@ -63,7 +64,7 @@ export default function InventoryPage() {
     };
   }, [menuItems]);
 
-  // Load menu items from localStorage on component mount
+  // Load menu items from Supabase on component mount
   useEffect(() => {
     loadMenuItems();
   }, []);
@@ -100,42 +101,26 @@ export default function InventoryPage() {
     };
   }, []);
 
-  const loadMenuItems = () => {
-    const stored = localStorage.getItem('menu');
-    if (stored) {
-      const items = JSON.parse(stored);
-      const migratedItems = items.map(item => ({
-        ...item,
-        quantity: item.quantity ?? 10,
-        min_stock: item.min_stock ?? 5
-      }));
-      setMenuItems(migratedItems);
-      localStorage.setItem('menu', JSON.stringify(migratedItems));
-    } else {
-      // ✅ Enhanced: Better default items matching dashboard expectations
-      const defaultMenu = [
-        { item_id: "1", item_name: "Margherita Pizza", price: 150.00, quantity: 25, min_stock: 5 },
-        { item_id: "2", item_name: "Chicken Burger", price: 80.00, quantity: 15, min_stock: 5 },
-        { item_id: "3", item_name: "BBQ Burger", price: 90.00, quantity: 12, min_stock: 5 },
-        { item_id: "4", item_name: "Fries", price: 50.00, quantity: 20, min_stock: 5 },
-        { item_id: "5", item_name: "Loaded Fries", price: 70.00, quantity: 10, min_stock: 5 },
-        { item_id: "6", item_name: "Onion Rings", price: 45.00, quantity: 18, min_stock: 5 },
-        { item_id: "7", item_name: "Garlic Bread", price: 60.00, quantity: 12, min_stock: 5 },
-        { item_id: "8", item_name: "Coke", price: 40.00, quantity: 30, min_stock: 10 },
-        { item_id: "9", item_name: "Milkshake", price: 80.00, quantity: 15, min_stock: 5 },
-        { item_id: "10", item_name: "Smoothie", price: 90.00, quantity: 12, min_stock: 5 }
-      ];
-      localStorage.setItem('menu', JSON.stringify(defaultMenu));
-      setMenuItems(defaultMenu);
-    }
-  };
+  // Updated to use Supabase
+  const loadMenuItems = async () => {
+  const result = await loadInventoryItems();
+  
+  if (result.success) {
+    setMenuItems(result.data);
+    console.log('✅ Inventory loaded from database:', result.data.length, 'items');
+  } else {
+    console.error('❌ Failed to load from database:', result.error);
+    setUpdateAlert("❌ Failed to load inventory from database!");
+    setTimeout(() => setUpdateAlert(""), 3000);
+  }
+};
+
 
   // ✅ ENHANCED: Comprehensive event dispatching system - THE KEY FIX
   const saveMenuItems = (updatedItems, changeType = 'update', changedItem = null) => {
     const previousItems = [...menuItems];
     
-    // Save to localStorage first
-    localStorage.setItem('menu', JSON.stringify(updatedItems));
+    // Update state immediately for UI responsiveness
     setMenuItems(updatedItems);
     
     // ✅ Enhanced: Detailed event information for dashboard sync
@@ -329,32 +314,38 @@ export default function InventoryPage() {
     }
   };
 
-  // ✅ Enhanced: Add item with proper event dispatching
-  const handleAddItem = (e) => {
+  // ✅ Enhanced: Add item with Supabase integration
+  const handleAddItem = async (e) => {
     e.preventDefault();
     if (!formData.item_name || !formData.price || !formData.quantity) return;
 
-    const newItem = {
-      item_id: generateId(),
+    const newItemData = {
       item_name: formData.item_name,
       price: parseFloat(formData.price),
       quantity: parseInt(formData.quantity),
       min_stock: parseInt(formData.min_stock)
     };
 
-    const updatedItems = [...menuItems, newItem];
+    const result = await addInventoryItem(newItemData);
     
-    // ✅ CRITICAL: Proper event dispatching for new items
-    saveMenuItems(updatedItems, 'add', newItem);
-    
-    setFormData({ item_name: "", price: "", quantity: "", min_stock: "5" });
-    setIsAddModalOpen(false);
-    setUpdateAlert(`🎉 "${newItem.item_name}" added to inventory with ${newItem.quantity} units!`);
-    setTimeout(() => setUpdateAlert(""), 3000);
+    if (result.success) {
+      const updatedItems = [...menuItems, result.data];
+      
+      setFormData({ item_name: "", price: "", quantity: "", min_stock: "5" });
+      setIsAddModalOpen(false);
+      setUpdateAlert(`🎉 "${result.data.item_name}" added to inventory with ${result.data.quantity} units!`);
+      setTimeout(() => setUpdateAlert(""), 3000);
+      
+      // ✅ CRITICAL: Proper event dispatching for new items
+      saveMenuItems(updatedItems, 'add', result.data);
+    } else {
+      setUpdateAlert("❌ Failed to add item to database!");
+      setTimeout(() => setUpdateAlert(""), 3000);
+    }
   };
 
-  // ✅ Enhanced: Edit item with proper event dispatching
-  const handleEditItem = (e) => {
+  // ✅ Enhanced: Edit item with Supabase integration
+  const handleEditItem = async (e) => {
     e.preventDefault();
     if (!formData.item_name || !formData.price || !formData.quantity) return;
 
@@ -371,37 +362,51 @@ export default function InventoryPage() {
       min_stock: parseInt(formData.min_stock)
     };
 
-    const updatedItems = menuItems.map(item =>
-      item.item_id === editingItem.item_id ? updatedItem : item
-    );
-
-    // ✅ CRITICAL: Proper event dispatching for edited items
-    saveMenuItems(updatedItems, 'edit', updatedItem);
+    const result = await updateInventoryItem(updatedItem);
     
-    setFormData({ item_name: "", price: "", quantity: "", min_stock: "5" });
-    setIsEditModalOpen(false);
-    setEditingItem(null);
-    
-    if (wasOutOfStock && isNowInStock) {
-      setUpdateAlert(`🎉 "${formData.item_name}" is now back in stock with ${newQuantity} units!`);
+    if (result.success) {
+      const updatedItems = menuItems.map(item =>
+        item.item_id === editingItem.item_id ? updatedItem : item
+      );
+      
+      setFormData({ item_name: "", price: "", quantity: "", min_stock: "5" });
+      setIsEditModalOpen(false);
+      setEditingItem(null);
+      
+      if (wasOutOfStock && isNowInStock) {
+        setUpdateAlert(`🎉 "${updatedItem.item_name}" is now back in stock with ${newQuantity} units!`);
+      } else {
+        setUpdateAlert(`✅ "${updatedItem.item_name}" updated successfully!`);
+      }
+      setTimeout(() => setUpdateAlert(""), 3000);
+      
+      // ✅ CRITICAL: Proper event dispatching for edited items
+      saveMenuItems(updatedItems, 'edit', updatedItem);
     } else {
-      setUpdateAlert(`✅ "${formData.item_name}" updated successfully!`);
+      setUpdateAlert("❌ Failed to update item in database!");
+      setTimeout(() => setUpdateAlert(""), 3000);
     }
-    
-    setTimeout(() => setUpdateAlert(""), 3000);
   };
 
-  // ✅ Enhanced: Delete item with proper event dispatching
-  const handleDeleteItem = (itemId) => {
+  // ✅ Enhanced: Delete item with Supabase integration
+  const handleDeleteItem = async (itemId) => {
     const itemToDelete = menuItems.find(item => item.item_id === itemId);
     if (window.confirm(`Are you sure you want to delete "${itemToDelete?.item_name}"?`)) {
-      const updatedItems = menuItems.filter(item => item.item_id !== itemId);
       
-      // ✅ CRITICAL: Proper event dispatching for deleted items
-      saveMenuItems(updatedItems, 'delete', itemToDelete);
+      const result = await deleteInventoryItem(itemId);
       
-      setUpdateAlert(`🗑️ "${itemToDelete?.item_name}" removed from inventory!`);
-      setTimeout(() => setUpdateAlert(""), 3000);
+      if (result.success) {
+        const updatedItems = menuItems.filter(item => item.item_id !== itemId);
+        
+        setUpdateAlert(`🗑️ "${itemToDelete?.item_name}" removed from inventory!`);
+        setTimeout(() => setUpdateAlert(""), 3000);
+        
+        // ✅ CRITICAL: Proper event dispatching for deleted items
+        saveMenuItems(updatedItems, 'delete', itemToDelete);
+      } else {
+        setUpdateAlert("❌ Failed to delete item from database!");
+        setTimeout(() => setUpdateAlert(""), 3000);
+      }
     }
   };
 
@@ -466,12 +471,12 @@ export default function InventoryPage() {
                   Inventory Management
                 </h2>
                 <p className="text-sm text-amber-700 font-medium mt-1">
-                  Manage your restaurant menu items and stock levels • Real-time sync enabled
+                  Manage your restaurant menu items and stock levels • Database sync enabled
                 </p>
               </div>
               <div className="flex items-center gap-4">
                 <div className="text-sm text-green-700 font-medium bg-white/80 backdrop-blur-sm rounded-2xl px-4 py-2 border border-green-200/50">
-                  ⚡ Real-time Events Active
+                  🗄️ Database Connected
                 </div>
                 <button
                   onClick={() => setIsAddModalOpen(true)}

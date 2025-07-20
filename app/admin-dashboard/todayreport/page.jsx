@@ -2,7 +2,15 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import AdminNavbar from "../../_components/adminNavbar";
-import { getTodayStats, clearAllData, formatCurrency } from "../../utils/localStorage";
+import { getTodaysReport, clearAllDeliveredOrders } from "../../../lib/reportService";
+
+// Format currency function
+const formatCurrency = (amount) => {
+  return new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+  }).format(amount);
+};
 
 export default function TodayReport() {
   const router = useRouter();
@@ -13,39 +21,66 @@ export default function TodayReport() {
     orders: []
   });
   const [loading, setLoading] = useState(true);
+  const [updateAlert, setUpdateAlert] = useState("");
 
   useEffect(() => {
     loadTodayData();
+    
+    // Refresh every 30 seconds to show new delivered orders
+    const interval = setInterval(loadTodayData, 30000);
+    return () => clearInterval(interval);
   }, []);
 
-  const loadTodayData = () => {
+  const loadTodayData = async () => {
     setLoading(true);
     try {
-      const todayStats = getTodayStats();
-      setStats(todayStats);
+      const result = await getTodaysReport();
+      if (result.success) {
+        setStats(result.data);
+        console.log('✅ Loaded today\'s report:', result.data);
+      } else {
+        console.error('❌ Failed to load today\'s report:', result.error);
+        setUpdateAlert("❌ Failed to load today's report data!");
+        setTimeout(() => setUpdateAlert(""), 3000);
+      }
     } catch (error) {
       console.error('Error loading today\'s data:', error);
+      setUpdateAlert("❌ Error loading report data!");
+      setTimeout(() => setUpdateAlert(""), 3000);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleClearData = () => {
-    if (confirm('Are you sure you want to clear all data? This action cannot be undone.')) {
-      clearAllData();
-      loadTodayData();
+  const handleClearData = async () => {
+    if (confirm('Are you sure you want to clear all delivered orders? This action cannot be undone.')) {
+      const result = await clearAllDeliveredOrders();
+      if (result.success) {
+        setUpdateAlert("✅ All delivered orders cleared successfully!");
+        setTimeout(() => setUpdateAlert(""), 3000);
+        loadTodayData(); // Refresh the data
+      } else {
+        setUpdateAlert("❌ Failed to clear delivered orders!");
+        setTimeout(() => setUpdateAlert(""), 3000);
+      }
     }
   };
 
   const formatTime = (t) =>
-    new Date(t).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true });
+    new Date(t).toLocaleTimeString("en-US", { 
+      hour: "2-digit", 
+      minute: "2-digit", 
+      hour12: true,
+      timeZone: 'Asia/Kolkata'
+    });
 
   const formatDate = (t) =>
     new Date(t).toLocaleDateString("en-US", { 
       weekday: 'long', 
       year: 'numeric', 
       month: 'long', 
-      day: 'numeric' 
+      day: 'numeric',
+      timeZone: 'Asia/Kolkata'
     });
 
   if (loading) {
@@ -65,6 +100,21 @@ export default function TodayReport() {
       
       <main className="max-w-7xl mx-auto py-8 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0">
+          
+          {/* Update Alert */}
+          {updateAlert && (
+            <div className="mb-6 p-4 bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-amber-200">
+              <div className="flex items-center gap-3">
+                <div className="text-lg">{updateAlert}</div>
+                <button 
+                  onClick={() => setUpdateAlert("")}
+                  className="ml-auto text-amber-600 hover:text-amber-800 transition-colors duration-200"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+          )}
           
           {/* Header */}
           <div className="mb-8 flex justify-between items-center">
@@ -144,7 +194,7 @@ export default function TodayReport() {
           <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl border border-emerald-200/50 overflow-hidden">
             <div className="px-8 py-6 border-b border-emerald-200/50 bg-gradient-to-r from-emerald-50/50 to-teal-50/50">
               <h3 className="text-2xl font-bold text-emerald-900">Delivered Orders</h3>
-              <p className="text-sm text-emerald-700 font-medium">All orders completed today</p>
+              <p className="text-sm text-emerald-700 font-medium">All orders completed today • Real-time sync from admin dashboard</p>
             </div>
 
             <div className="overflow-x-auto">
@@ -169,7 +219,7 @@ export default function TodayReport() {
                             <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd"/>
                           </svg>
                           <p className="text-lg font-medium">No orders delivered today</p>
-                          <p className="text-sm text-emerald-500">Delivered orders will appear here</p>
+                          <p className="text-sm text-emerald-500">Orders marked as delivered will appear here automatically</p>
                         </div>
                       </td>
                     </tr>
@@ -190,7 +240,12 @@ export default function TodayReport() {
                             <div className="w-8 h-8 bg-gradient-to-r from-teal-500 to-cyan-500 rounded-full flex items-center justify-center text-white font-bold text-xs">
                               {order.customerName[0]}
                             </div>
-                            <div className="text-sm font-semibold text-emerald-900">{order.customerName}</div>
+                            <div>
+                              <div className="text-sm font-semibold text-emerald-900">{order.customerName}</div>
+                              {order.phone && (
+                                <div className="text-xs text-gray-600">{order.phone}</div>
+                              )}
+                            </div>
                           </div>
                         </td>
 
