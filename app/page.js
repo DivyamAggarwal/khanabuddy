@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getInventoryItems } from "./utils/inventoryUtils";
+import { loadInventoryItems } from "../lib/orderService"; // ✅ Changed from inventoryUtils to Supabase
 
 // Unsplash direct CDN images – no need to download!
 const bgImages = [
@@ -66,28 +66,36 @@ export default function LandingPage() {
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
-  // ✅ Load menu items from inventory
-  const loadMenuFromInventory = () => {
+  // ✅ UPDATED: Load menu items from Supabase
+  const loadMenuFromInventory = async () => {
     try {
       setIsLoading(true);
-      const inventoryItems = getInventoryItems();
-      console.log('📦 Loading menu from inventory:', inventoryItems);
+      console.log('🚀 Loading menu from Supabase...');
       
-      // Convert inventory items to menu format and filter available items
-      const dynamicMenu = inventoryItems
-        .filter(item => item.quantity > 0) // Only show items in stock
-        .map(item => ({
-          name: item.item_name,
-          price: item.price,
-          emoji: getItemEmoji(item.item_name),
-          quantity: item.quantity
-        }))
-        .sort((a, b) => a.price - b.price); // Sort by price
+      const result = await loadInventoryItems();
       
-      console.log('✅ Dynamic menu created:', dynamicMenu);
-      setMenuItems(dynamicMenu);
+      if (result.success && result.data) {
+        console.log('📦 Raw inventory from Supabase:', result.data);
+        
+        // Convert Supabase inventory items to menu format and filter available items
+        const dynamicMenu = result.data
+          .filter(item => item.quantity > 0) // Only show items in stock
+          .map(item => ({
+            name: item.item_name,
+            price: item.price,
+            emoji: getItemEmoji(item.item_name),
+            quantity: item.quantity
+          }))
+          .sort((a, b) => a.price - b.price); // Sort by price
+        
+        console.log('✅ Dynamic menu created from Supabase:', dynamicMenu);
+        setMenuItems(dynamicMenu);
+      } else {
+        console.error('❌ Failed to load menu from Supabase:', result.error);
+        setMenuItems([]);
+      }
     } catch (error) {
-      console.error('❌ Error loading menu from inventory:', error);
+      console.error('❌ Error loading menu from Supabase:', error);
       setMenuItems([]);
     } finally {
       setIsLoading(false);
@@ -102,7 +110,7 @@ export default function LandingPage() {
   // ✅ Listen for inventory updates in real-time
   useEffect(() => {
     const handleInventoryUpdate = () => {
-      console.log('🔄 Inventory updated, refreshing menu...');
+      console.log('🔄 Inventory updated, refreshing menu from Supabase...');
       loadMenuFromInventory();
     };
 
@@ -169,7 +177,7 @@ export default function LandingPage() {
           </p>
         </div>
 
-        {/* ✅ FIXED: Menu Table Section with Scroll */}
+        {/* ✅ Menu Table Section with Scroll */}
         <div className="w-full max-w-2xl mx-auto mb-8">
           <div className="bg-white/20 backdrop-blur-md rounded-3xl shadow-2xl border border-white/30 p-6 md:p-8">
             {/* Menu Header */}
@@ -186,7 +194,7 @@ export default function LandingPage() {
             {isLoading ? (
               <div className="text-center py-8">
                 <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
-                <p className="text-white mt-4">Loading fresh menu...</p>
+                <p className="text-white mt-4">Loading fresh menu from database...</p>
               </div>
             ) : menuItems.length === 0 ? (
               /* ✅ Empty State */
