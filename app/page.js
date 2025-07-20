@@ -278,19 +278,109 @@ export default function LandingPage() {
           </div>
         </div>
 
-        {/* ✅ Dynamic Order Button */}
-        <button
-          type="button"
-          onClick={() => router.push("/order")}
-          disabled={menuItems.length === 0}
-          className={`shadow-2xl w-[95vw] max-w-[26rem] py-4 text-xl font-bold rounded-xl transition-all ${
-            menuItems.length > 0
-              ? 'bg-gradient-to-r from-teal-500 via-indigo-500 to-pink-500 text-white hover:scale-105'
-              : 'bg-gray-500 text-gray-300 cursor-not-allowed'
-          }`}
-        >
-          {menuItems.length > 0 ? '🛒 Order Now' : '⏳ Menu Loading...'}
-        </button>
+        {/* ✅ ENHANCED Order Now Button with Glassmorphism Design */}
+        <div className="w-full max-w-2xl mx-auto">
+          <button
+            type="button"
+            onClick={() => router.push("/order")}
+            disabled={menuItems.length === 0}
+            className={`
+              group relative w-full py-6 px-8 rounded-2xl
+              backdrop-blur-md border border-white/30
+              transition-all duration-300 ease-out
+              shadow-xl hover:shadow-2xl
+              ${menuItems.length > 0
+                ? 'bg-white/20 hover:bg-white/25 hover:scale-[1.02] hover:border-white/40 active:scale-[0.98]'
+                : 'bg-white/10 border-white/20 cursor-not-allowed opacity-60'
+              }
+            `}
+          >
+            {/* Background Gradient Overlay */}
+            <div className={`
+              absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100
+              transition-opacity duration-300
+              ${menuItems.length > 0 
+                ? 'bg-gradient-to-r from-emerald-500/20 via-blue-500/20 to-purple-500/20'
+                : ''
+              }
+            `} />
+            
+            {/* Content Container */}
+            <div className="relative flex items-center justify-center space-x-3">
+              {/* Icon */}
+              <div className={`
+                text-3xl transition-transform duration-300
+                ${menuItems.length > 0 ? 'group-hover:scale-110 group-hover:rotate-12' : ''}
+              `}>
+                {menuItems.length > 0 ? '🛒' : '⏳'}
+              </div>
+              
+              {/* Text */}
+              <div className="text-center">
+                <div className={`
+                  text-2xl font-bold tracking-wide
+                  ${menuItems.length > 0 ? 'text-white' : 'text-white/70'}
+                  drop-shadow-lg
+                `}>
+                  {menuItems.length > 0 ? 'Order Now' : 'Menu Loading...'}
+                </div>
+                
+                {/* Subtitle */}
+                {menuItems.length > 0 && (
+                  <div className="text-white/80 text-sm font-medium mt-1 drop-shadow-md">
+                    Voice ordering • Fast delivery
+                  </div>
+                )}
+              </div>
+              
+              {/* Arrow Icon */}
+              {menuItems.length > 0 && (
+                <div className="text-white/70 group-hover:text-white transition-colors duration-300 group-hover:translate-x-1">
+                  <svg 
+                    className="w-6 h-6" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    viewBox="0 0 24 24"
+                  >
+                    <path 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round" 
+                      strokeWidth={2} 
+                      d="M13 7l5 5m0 0l-5 5m5-5H6" 
+                    />
+                  </svg>
+                </div>
+              )}
+            </div>
+            
+            {/* Pulse Effect for Loading State */}
+            {menuItems.length === 0 && (
+              <div className="absolute inset-0 rounded-2xl bg-white/5 animate-pulse" />
+            )}
+            
+            {/* Shine Effect on Hover */}
+            {menuItems.length > 0 && (
+              <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-r from-transparent via-white/10 to-transparent transform -skew-x-12 group-hover:translate-x-full" 
+                   style={{ transition: 'transform 0.8s ease-out, opacity 0.3s ease-out' }} />
+            )}
+          </button>
+          
+          {/* Optional: Order Stats Bar */}
+          {menuItems.length > 0 && (
+            <div className="mt-4 text-center">
+              <div className="inline-flex items-center space-x-4 bg-white/10 backdrop-blur-sm rounded-xl px-6 py-2 border border-white/20">
+                <div className="flex items-center space-x-2">
+                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                  <span className="text-white/80 text-sm font-medium">Live Menu</span>
+                </div>
+                <div className="text-white/60">•</div>
+                <div className="text-white/80 text-sm font-medium">
+                  {totalItems} items available
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* ✅ Custom Scrollbar Styles */}
