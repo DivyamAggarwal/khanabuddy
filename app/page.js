@@ -430,6 +430,8 @@ export default function LandingPage() {
                 Smart Voice-Enabled Food Ordering Platform for modern dining.
                 <br />
                 Transparent, efficient, and reliable service for all food lovers.
+                <br />
+                Order by Voice, Dine with Joy - Fast & Easy!
               </p>
             </div>
 
@@ -503,9 +505,9 @@ export default function LandingPage() {
               <p className="text-gray-400 text-sm">
                 © 2025 KhanaBuddy. All Rights Reserved.
               </p>
-              <p className="text-gray-400 text-sm">
-                Project by <span className="text-orange-400">Your Name</span> • <a href="#" className="text-orange-400 hover:text-orange-300 transition-colors">GitHub</a>
-              </p>
+              {/* <p className="text-gray-400 text-sm">
+                Project by <span className="text-orange-400"></span> • <a href="#" className="text-orange-400 hover:text-orange-300 transition-colors"></a>
+              </p> */}
             </div>
           </div>
         </div>
