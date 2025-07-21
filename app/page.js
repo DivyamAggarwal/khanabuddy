@@ -164,10 +164,10 @@ export default function LandingPage() {
           
           {/* ✅ UPDATED: Header Section with Logo and Name Side by Side */}
           <div className="text-center mb-12">
-            <div className="flex justify-center items-center mb-6 space-x-6">
+            <div className="flex justify-center items-center mb-1">
               {/* Logo */}
               <img
-                src="/websitelogo.png"
+                src="/websitelogoo.png"
                 alt="KhanaBuddy Logo"
                 className="w-20 h-auto md:w-24 lg:w-28 drop-shadow-2xl transform hover:scale-105 transition-transform duration-300"
               />
