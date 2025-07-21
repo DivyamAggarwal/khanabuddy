@@ -1,9 +1,9 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { loadInventoryItems } from "../lib/orderService"; // ✅ Changed from inventoryUtils to Supabase
+import { loadInventoryItems } from "../lib/orderService";
 
-// Unsplash direct CDN images – no need to download!
+// Background images array (keeping your existing images)
 const bgImages = [
   "https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&w=1200&q=80",
   "https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=1200&q=80",
@@ -14,7 +14,7 @@ const bgImages = [
   "https://images.pexels.com/photos/1437267/pexels-photo-1437267.jpeg?auto=compress&w=1200&q=80",
 ];
 
-// ✅ Emoji mapping for different items
+// Emoji mapping for menu items
 const getItemEmoji = (itemName) => {
   const name = itemName.toLowerCase();
   const emojiMap = {
@@ -50,14 +50,12 @@ const getItemEmoji = (itemName) => {
     'burrito': '🌯'
   };
   
-  // Find matching emoji or use default
   for (const [key, emoji] of Object.entries(emojiMap)) {
     if (name.includes(key)) {
       return emoji;
     }
   }
-  
-  return '🍽️'; // Default emoji for unknown items
+  return '🍽️';
 };
 
 export default function LandingPage() {
@@ -66,7 +64,7 @@ export default function LandingPage() {
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
-  // ✅ UPDATED: Load menu items from Supabase
+  // Load menu items from Supabase
   const loadMenuFromInventory = async () => {
     try {
       setIsLoading(true);
@@ -77,16 +75,15 @@ export default function LandingPage() {
       if (result.success && result.data) {
         console.log('📦 Raw inventory from Supabase:', result.data);
         
-        // Convert Supabase inventory items to menu format and filter available items
         const dynamicMenu = result.data
-          .filter(item => item.quantity > 0) // Only show items in stock
+          .filter(item => item.quantity > 0)
           .map(item => ({
             name: item.item_name,
             price: item.price,
             emoji: getItemEmoji(item.item_name),
             quantity: item.quantity
           }))
-          .sort((a, b) => a.price - b.price); // Sort by price
+          .sort((a, b) => a.price - b.price);
         
         console.log('✅ Dynamic menu created from Supabase:', dynamicMenu);
         setMenuItems(dynamicMenu);
@@ -102,12 +99,10 @@ export default function LandingPage() {
     }
   };
 
-  // ✅ Load inventory on component mount
   useEffect(() => {
     loadMenuFromInventory();
   }, []);
 
-  // ✅ Listen for inventory updates in real-time
   useEffect(() => {
     const handleInventoryUpdate = () => {
       console.log('🔄 Inventory updated, refreshing menu from Supabase...');
@@ -125,7 +120,6 @@ export default function LandingPage() {
     };
   }, []);
 
-  // Automatic background slide every 4 seconds
   useEffect(() => {
     const intv = setInterval(
       () => setIdx((i) => (i + 1) % bgImages.length),
@@ -134,7 +128,6 @@ export default function LandingPage() {
     return () => clearInterval(intv);
   }, []);
 
-  // ✅ Calculate dynamic stats
   const totalItems = menuItems.length;
   const lowestPrice = menuItems.length > 0 ? Math.min(...menuItems.map(item => item.price)) : 0;
   const totalStock = menuItems.reduce((sum, item) => sum + item.quantity, 0);
@@ -168,20 +161,29 @@ export default function LandingPage() {
 
         {/* Main Content Container */}
         <div className="relative z-10 min-h-screen flex flex-col items-center justify-center px-4 py-8">
-          {/* Header Section */}
+          
+          {/* ✅ UPDATED: Header Section with Logo and Name Side by Side */}
           <div className="text-center mb-12">
-            <h1 className="text-[2.5rem] md:text-5xl font-bold shadow-lg mb-3 text-white tracking-tight drop-shadow-xl">
-              KhanaBuddy
-            </h1>
-            <p className="text-lg md:text-xl text-white/90 font-medium shadow text-center max-w-lg">
-              Order by Voice, Dine with Joy - Fast & Easy! <br />
+            <div className="flex justify-center items-center mb-6 space-x-6">
+              {/* Logo */}
+              <img
+                src="/websitelogo.png"
+                alt="KhanaBuddy Logo"
+                className="w-20 h-auto md:w-24 lg:w-28 drop-shadow-2xl transform hover:scale-105 transition-transform duration-300"
+              />
+              {/* Brand Name */}
+              <h1 className="text-[2.5rem] md:text-5xl lg:text-6xl font-bold text-white tracking-tight drop-shadow-xl">
+                KhanaBuddy
+              </h1>
+            </div>
+            <p className="text-lg md:text-xl text-white/90 font-medium shadow text-center max-w-lg drop-shadow-lg mx-auto">
+              Order by Voice, Dine with Joy - Fast & Easy!
             </p>
           </div>
 
-          {/* ✅ Menu Table Section with Scroll */}
+          {/* Menu Table Section - Rest of your existing code remains the same */}
           <div className="w-full max-w-2xl mx-auto mb-8">
             <div className="bg-white/20 backdrop-blur-md rounded-3xl shadow-2xl border border-white/30 p-6 md:p-8">
-              {/* Menu Header */}
               <div className="text-center mb-6">
                 <h2 className="text-2xl md:text-3xl font-bold text-white mb-2 drop-shadow-lg">
                   🍽️ Our Menu
@@ -191,23 +193,19 @@ export default function LandingPage() {
                 </p>
               </div>
 
-              {/* ✅ Loading State */}
               {isLoading ? (
                 <div className="text-center py-8">
                   <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
                   <p className="text-white mt-4">Loading fresh menu from database...</p>
                 </div>
               ) : menuItems.length === 0 ? (
-                /* ✅ Empty State */
                 <div className="text-center py-8">
                   <div className="text-4xl mb-4">🍽️</div>
                   <p className="text-white/90 mb-2">Menu is being prepared!</p>
                   <p className="text-white/70 text-sm">Check back soon for fresh items.</p>
                 </div>
               ) : (
-                /* ✅ SCROLLABLE Menu Table Container */
                 <div className="overflow-hidden rounded-2xl border border-white/20">
-                  {/* Fixed Table Header */}
                   <div className="bg-white/10 backdrop-blur-sm">
                     <div className="grid grid-cols-2">
                       <div className="px-4 md:px-6 py-4 text-left text-sm md:text-base font-bold text-white uppercase tracking-wider">
@@ -219,7 +217,6 @@ export default function LandingPage() {
                     </div>
                   </div>
 
-                  {/* ✅ SCROLLABLE Menu Body - Fixed Height with Scroll */}
                   <div className="max-h-64 overflow-y-auto custom-scrollbar">
                     <div className="divide-y divide-white/10">
                       {menuItems.map((item, index) => (
@@ -235,7 +232,6 @@ export default function LandingPage() {
                               <div className="text-base md:text-lg font-semibold text-white drop-shadow-md">
                                 {item.name}
                               </div>
-                              {/* ✅ Show low stock indicator */}
                               {item.quantity < 5 && (
                                 <span className="ml-2 text-xs bg-orange-500 text-white px-2 py-1 rounded-full">
                                   Low Stock
@@ -255,9 +251,8 @@ export default function LandingPage() {
                 </div>
               )}
 
-              {/* ✅ Dynamic Quick Stats */}
+              {/* Dynamic Quick Stats */}
               <div className="grid grid-cols-3 gap-4 mt-6 text-center">
-                {/* Box 1: Menu Variety */}
                 <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20 group hover:bg-white/15 transition-all duration-300">
                   <div className="flex items-center justify-center mb-1">
                     <span className="text-lg mr-1">🍽️</span>
@@ -267,7 +262,6 @@ export default function LandingPage() {
                   <div className="text-[10px] text-white/60 mt-1">Something for everyone</div>
                 </div>
 
-                {/* Box 2: Pricing */}
                 <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20 group hover:bg-white/15 transition-all duration-300">
                   <div className="text-[10px] md:text-xs text-white/70 font-medium mb-1">Starting From</div>
                   <div className="flex items-center justify-center">
@@ -279,7 +273,6 @@ export default function LandingPage() {
                   <div className="text-[10px] text-white/60 mt-1">Budget friendly</div>
                 </div>
 
-                {/* Box 3: Freshness */}
                 <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20 group hover:bg-white/15 transition-all duration-300">
                   <div className="flex items-center justify-center mb-1">
                     <span className="text-lg mr-1">{totalStock > 0 ? '✅' : '⏳'}</span>
@@ -298,7 +291,7 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* ✅ ENHANCED Order Now Button with Glassmorphism Design */}
+          {/* Order Now Button - Keep existing implementation */}
           <div className="w-full max-w-2xl mx-auto">
             <button
               type="button"
@@ -315,7 +308,6 @@ export default function LandingPage() {
                 }
               `}
             >
-              {/* Background Gradient Overlay */}
               <div className={`
                 absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100
                 transition-opacity duration-300
@@ -325,9 +317,7 @@ export default function LandingPage() {
                 }
               `} />
               
-              {/* Content Container */}
               <div className="relative flex items-center justify-center space-x-3">
-                {/* Icon */}
                 <div className={`
                   text-3xl transition-transform duration-300
                   ${menuItems.length > 0 ? 'group-hover:scale-110 group-hover:rotate-12' : ''}
@@ -335,7 +325,6 @@ export default function LandingPage() {
                   {menuItems.length > 0 ? '🛒' : '⏳'}
                 </div>
                 
-                {/* Text */}
                 <div className="text-center">
                   <div className={`
                     text-2xl font-bold tracking-wide
@@ -345,7 +334,6 @@ export default function LandingPage() {
                     {menuItems.length > 0 ? 'Order Now' : 'Menu Loading...'}
                   </div>
                   
-                  {/* Subtitle */}
                   {menuItems.length > 0 && (
                     <div className="text-white/80 text-sm font-medium mt-1 drop-shadow-md">
                       Voice ordering • Fast delivery
@@ -353,7 +341,6 @@ export default function LandingPage() {
                   )}
                 </div>
                 
-                {/* Arrow Icon */}
                 {menuItems.length > 0 && (
                   <div className="text-white/70 group-hover:text-white transition-colors duration-300 group-hover:translate-x-1">
                     <svg 
@@ -373,19 +360,16 @@ export default function LandingPage() {
                 )}
               </div>
               
-              {/* Pulse Effect for Loading State */}
               {menuItems.length === 0 && (
                 <div className="absolute inset-0 rounded-2xl bg-white/5 animate-pulse" />
               )}
               
-              {/* Shine Effect on Hover */}
               {menuItems.length > 0 && (
                 <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-r from-transparent via-white/10 to-transparent transform -skew-x-12 group-hover:translate-x-full" 
                      style={{ transition: 'transform 0.8s ease-out, opacity 0.3s ease-out' }} />
               )}
             </button>
             
-            {/* Optional: Order Stats Bar */}
             {menuItems.length > 0 && (
               <div className="mt-4 text-center">
                 <div className="inline-flex items-center space-x-4 bg-white/10 backdrop-blur-sm rounded-xl px-6 py-2 border border-white/20">
@@ -403,7 +387,7 @@ export default function LandingPage() {
           </div>
         </div>
 
-        {/* ✅ Custom Scrollbar Styles */}
+        {/* Custom Scrollbar Styles */}
         <style jsx>{`
           .custom-scrollbar::-webkit-scrollbar {
             width: 8px;
@@ -423,7 +407,6 @@ export default function LandingPage() {
             background: rgba(255, 255, 255, 0.5);
           }
           
-          /* Firefox scrollbar styling */
           .custom-scrollbar {
             scrollbar-width: thin;
             scrollbar-color: rgba(255, 255, 255, 0.3) rgba(255, 255, 255, 0.1);
@@ -431,12 +414,11 @@ export default function LandingPage() {
         `}</style>
       </div>
 
-      {/* ✅ NEW: Professional Footer Component (Similar to RailCare) */}
+      {/* Footer - Keep your existing footer code */}
       <footer className="bg-black text-white">
         <div className="max-w-7xl mx-auto px-6 py-12">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             
-            {/* Company Info - Left Column */}
             <div className="space-y-4">
               <div className="flex items-center space-x-3">
                 <div className="w-10 h-10 bg-gradient-to-r from-orange-500 to-amber-500 rounded-full flex items-center justify-center">
@@ -451,7 +433,6 @@ export default function LandingPage() {
               </p>
             </div>
 
-            {/* Quick Links - Middle Column */}
             <div>
               <h4 className="text-lg font-semibold text-white mb-6">Quick Links</h4>
               <ul className="space-y-3 text-sm">
@@ -498,7 +479,6 @@ export default function LandingPage() {
               </ul>
             </div>
 
-            {/* Support - Right Column */}
             <div>
               <h4 className="text-lg font-semibold text-white mb-6">Support</h4>
               <div className="space-y-3 text-sm">
@@ -518,7 +498,6 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Bottom Bar */}
           <div className="mt-8 pt-8 border-t border-gray-700">
             <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
               <p className="text-gray-400 text-sm">
