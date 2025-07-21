@@ -18,44 +18,44 @@ const bgImages = [
 const getItemEmoji = (itemName) => {
   const name = itemName.toLowerCase();
   const emojiMap = {
-    'fries': '🍟',
-    'french fries': '🍟',
-    'loaded fries': '🍟',
-    'garlic bread': '🥖',
-    'bread': '🍞',
-    'pasta': '🍝',
-    'spaghetti': '🍝',
-    'penne': '🍝',
-    'salad': '🥗',
-    'caesar salad': '🥗',
-    'garden salad': '🥗',
-    'burger': '🍔',
-    'chicken burger': '🍔',
-    'bbq burger': '🍔',
-    'beef burger': '🍔',
-    'pizza': '🍕',
-    'margherita pizza': '🍕',
-    'pepperoni pizza': '🍕',
-    'cheese pizza': '🍕',
-    'coke': '🥤',
-    'coca cola': '🥤',
-    'cola': '🥤',
-    'milkshake': '🥤',
-    'shake': '🥤',
-    'smoothie': '🥤',
-    'onion rings': '🧅',
-    'sandwich': '🥪',
-    'wrap': '🌯',
-    'taco': '🌮',
-    'burrito': '🌯'
+    fries: "🍟",
+    "french fries": "🍟",
+    "loaded fries": "🍟",
+    "garlic bread": "🥖",
+    bread: "🍞",
+    pasta: "🍝",
+    spaghetti: "🍝",
+    penne: "🍝",
+    salad: "🥗",
+    "caesar salad": "🥗",
+    "garden salad": "🥗",
+    burger: "🍔",
+    "chicken burger": "🍔",
+    "bbq burger": "🍔",
+    "beef burger": "🍔",
+    pizza: "🍕",
+    "margherita pizza": "🍕",
+    "pepperoni pizza": "🍕",
+    "cheese pizza": "🍕",
+    coke: "🥤",
+    "coca cola": "🥤",
+    cola: "🥤",
+    milkshake: "🥤",
+    shake: "🥤",
+    smoothie: "🥤",
+    "onion rings": "🧅",
+    sandwich: "🥪",
+    wrap: "🌯",
+    taco: "🌮",
+    burrito: "🌯",
   };
-  
+
   for (const [key, emoji] of Object.entries(emojiMap)) {
     if (name.includes(key)) {
       return emoji;
     }
   }
-  return '🍽️';
+  return "🍽️";
 };
 
 export default function LandingPage() {
@@ -68,31 +68,31 @@ export default function LandingPage() {
   const loadMenuFromInventory = async () => {
     try {
       setIsLoading(true);
-      console.log('🚀 Loading menu from Supabase...');
-      
+      console.log("🚀 Loading menu from Supabase...");
+
       const result = await loadInventoryItems();
-      
+
       if (result.success && result.data) {
-        console.log('📦 Raw inventory from Supabase:', result.data);
-        
+        console.log("📦 Raw inventory from Supabase:", result.data);
+
         const dynamicMenu = result.data
-          .filter(item => item.quantity > 0)
-          .map(item => ({
+          .filter((item) => item.quantity > 0)
+          .map((item) => ({
             name: item.item_name,
             price: item.price,
             emoji: getItemEmoji(item.item_name),
-            quantity: item.quantity
+            quantity: item.quantity,
           }))
           .sort((a, b) => a.price - b.price);
-        
-        console.log('✅ Dynamic menu created from Supabase:', dynamicMenu);
+
+        console.log("✅ Dynamic menu created from Supabase:", dynamicMenu);
         setMenuItems(dynamicMenu);
       } else {
-        console.error('❌ Failed to load menu from Supabase:', result.error);
+        console.error("❌ Failed to load menu from Supabase:", result.error);
         setMenuItems([]);
       }
     } catch (error) {
-      console.error('❌ Error loading menu from Supabase:', error);
+      console.error("❌ Error loading menu from Supabase:", error);
       setMenuItems([]);
     } finally {
       setIsLoading(false);
@@ -105,18 +105,18 @@ export default function LandingPage() {
 
   useEffect(() => {
     const handleInventoryUpdate = () => {
-      console.log('🔄 Inventory updated, refreshing menu from Supabase...');
+      console.log("🔄 Inventory updated, refreshing menu from Supabase...");
       loadMenuFromInventory();
     };
 
-    window.addEventListener('inventoryUpdated', handleInventoryUpdate);
-    window.addEventListener('pricesUpdated', handleInventoryUpdate);
-    window.addEventListener('quantityUpdated', handleInventoryUpdate);
+    window.addEventListener("inventoryUpdated", handleInventoryUpdate);
+    window.addEventListener("pricesUpdated", handleInventoryUpdate);
+    window.addEventListener("quantityUpdated", handleInventoryUpdate);
 
     return () => {
-      window.removeEventListener('inventoryUpdated', handleInventoryUpdate);
-      window.removeEventListener('pricesUpdated', handleInventoryUpdate);
-      window.removeEventListener('quantityUpdated', handleInventoryUpdate);
+      window.removeEventListener("inventoryUpdated", handleInventoryUpdate);
+      window.removeEventListener("pricesUpdated", handleInventoryUpdate);
+      window.removeEventListener("quantityUpdated", handleInventoryUpdate);
     };
   }, []);
 
@@ -129,7 +129,8 @@ export default function LandingPage() {
   }, []);
 
   const totalItems = menuItems.length;
-  const lowestPrice = menuItems.length > 0 ? Math.min(...menuItems.map(item => item.price)) : 0;
+  const lowestPrice =
+    menuItems.length > 0 ? Math.min(...menuItems.map((item) => item.price)) : 0;
   const totalStock = menuItems.reduce((sum, item) => sum + item.quantity, 0);
 
   return (
@@ -161,7 +162,6 @@ export default function LandingPage() {
 
         {/* Main Content Container */}
         <div className="relative z-10 min-h-screen flex flex-col items-center justify-center px-4 py-8">
-          
           {/* ✅ UPDATED: Header Section with Logo and Name Side by Side */}
           <div className="text-center mb-12">
             <div className="flex justify-center items-center mb-1">
@@ -196,13 +196,17 @@ export default function LandingPage() {
               {isLoading ? (
                 <div className="text-center py-8">
                   <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
-                  <p className="text-white mt-4">Loading fresh menu from database...</p>
+                  <p className="text-white mt-4">
+                    Loading fresh menu from database...
+                  </p>
                 </div>
               ) : menuItems.length === 0 ? (
                 <div className="text-center py-8">
                   <div className="text-4xl mb-4">🍽️</div>
                   <p className="text-white/90 mb-2">Menu is being prepared!</p>
-                  <p className="text-white/70 text-sm">Check back soon for fresh items.</p>
+                  <p className="text-white/70 text-sm">
+                    Check back soon for fresh items.
+                  </p>
                 </div>
               ) : (
                 <div className="overflow-hidden rounded-2xl border border-white/20">
@@ -256,35 +260,47 @@ export default function LandingPage() {
                 <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20 group hover:bg-white/15 transition-all duration-300">
                   <div className="flex items-center justify-center mb-1">
                     <span className="text-lg mr-1">🍽️</span>
-                    <div className="text-lg md:text-xl font-bold text-white">{totalItems}</div>
+                    <div className="text-lg md:text-xl font-bold text-white">
+                      {totalItems}
+                    </div>
                   </div>
-                  <div className="text-xs md:text-sm text-white/80 font-medium">Menu Items</div>
-                  <div className="text-[10px] text-white/60 mt-1">Something for everyone</div>
+                  <div className="text-xs md:text-sm text-white/80 font-medium">
+                    Menu Items
+                  </div>
+                  <div className="text-[10px] text-white/60 mt-1">
+                    Something for everyone
+                  </div>
                 </div>
 
                 <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20 group hover:bg-white/15 transition-all duration-300">
-                  <div className="text-[10px] md:text-xs text-white/70 font-medium mb-1">Starting From</div>
+                  <div className="text-[10px] md:text-xs text-white/70 font-medium mb-1">
+                    Starting From
+                  </div>
                   <div className="flex items-center justify-center">
                     <span className="text-sm mr-1">💰</span>
                     <div className="text-lg md:text-xl font-bold text-yellow-300">
-                      {lowestPrice > 0 ? `₹${lowestPrice}` : '₹0'}
+                      {lowestPrice > 0 ? `₹${lowestPrice}` : "₹0"}
                     </div>
                   </div>
-                  <div className="text-[10px] text-white/60 mt-1">Budget friendly</div>
+                  <div className="text-[10px] text-white/60 mt-1">
+                    Budget friendly
+                  </div>
                 </div>
 
                 <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20 group hover:bg-white/15 transition-all duration-300">
                   <div className="flex items-center justify-center mb-1">
-                    <span className="text-lg mr-1">{totalStock > 0 ? '✅' : '⏳'}</span>
+                    <span className="text-lg mr-1">
+                      {totalStock > 0 ? "✅" : "⏳"}
+                    </span>
                     <div className="text-lg md:text-xl font-bold text-green-300">
-                      {totalStock > 0 ? 'Fresh' : 'Soon'}
+                      {totalStock > 0 ? "Fresh" : "Soon"}
                     </div>
                   </div>
                   <div className="text-xs md:text-sm text-white/80 font-medium">
-                    {totalStock > 0 ? 'Made to Order' : 'Coming Soon'}
+                    {totalStock > 0 ? "Made to Order" : "Coming Soon"}
                   </div>
                   <div className="text-[10px] text-white/60 mt-1">
-                    {totalStock > 0 ? 'Zero compromise' : 'Please wait'}
+                    {totalStock > 0 ? "Zero compromise" : "Please wait"}
                   </div>
                 </div>
               </div>
@@ -302,80 +318,99 @@ export default function LandingPage() {
                 backdrop-blur-md border border-white/30
                 transition-all duration-300 ease-out
                 shadow-xl hover:shadow-2xl
-                ${menuItems.length > 0
-                  ? 'bg-white/20 hover:bg-white/25 hover:scale-[1.02] hover:border-white/40 active:scale-[0.98]'
-                  : 'bg-white/10 border-white/20 cursor-not-allowed opacity-60'
+                ${
+                  menuItems.length > 0
+                    ? "bg-white/20 hover:bg-white/25 hover:scale-[1.02] hover:border-white/40 active:scale-[0.98]"
+                    : "bg-white/10 border-white/20 cursor-not-allowed opacity-60"
                 }
               `}
             >
-              <div className={`
+              <div
+                className={`
                 absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100
                 transition-opacity duration-300
-                ${menuItems.length > 0 
-                  ? 'bg-gradient-to-r from-emerald-500/20 via-blue-500/20 to-purple-500/20'
-                  : ''
+                ${
+                  menuItems.length > 0
+                    ? "bg-gradient-to-r from-emerald-500/20 via-blue-500/20 to-purple-500/20"
+                    : ""
                 }
-              `} />
-              
+              `}
+              />
+
               <div className="relative flex items-center justify-center space-x-3">
-                <div className={`
+                <div
+                  className={`
                   text-3xl transition-transform duration-300
-                  ${menuItems.length > 0 ? 'group-hover:scale-110 group-hover:rotate-12' : ''}
-                `}>
-                  {menuItems.length > 0 ? '🛒' : '⏳'}
+                  ${
+                    menuItems.length > 0
+                      ? "group-hover:scale-110 group-hover:rotate-12"
+                      : ""
+                  }
+                `}
+                >
+                  {menuItems.length > 0 ? "🛒" : "⏳"}
                 </div>
-                
+
                 <div className="text-center">
-                  <div className={`
+                  <div
+                    className={`
                     text-2xl font-bold tracking-wide
-                    ${menuItems.length > 0 ? 'text-white' : 'text-white/70'}
+                    ${menuItems.length > 0 ? "text-white" : "text-white/70"}
                     drop-shadow-lg
-                  `}>
-                    {menuItems.length > 0 ? 'Order Now' : 'Menu Loading...'}
+                  `}
+                  >
+                    {menuItems.length > 0 ? "Order Now" : "Menu Loading..."}
                   </div>
-                  
+
                   {menuItems.length > 0 && (
                     <div className="text-white/80 text-sm font-medium mt-1 drop-shadow-md">
                       Voice ordering • Fast delivery
                     </div>
                   )}
                 </div>
-                
+
                 {menuItems.length > 0 && (
                   <div className="text-white/70 group-hover:text-white transition-colors duration-300 group-hover:translate-x-1">
-                    <svg 
-                      className="w-6 h-6" 
-                      fill="none" 
-                      stroke="currentColor" 
+                    <svg
+                      className="w-6 h-6"
+                      fill="none"
+                      stroke="currentColor"
                       viewBox="0 0 24 24"
                     >
-                      <path 
-                        strokeLinecap="round" 
-                        strokeLinejoin="round" 
-                        strokeWidth={2} 
-                        d="M13 7l5 5m0 0l-5 5m5-5H6" 
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M13 7l5 5m0 0l-5 5m5-5H6"
                       />
                     </svg>
                   </div>
                 )}
               </div>
-              
+
               {menuItems.length === 0 && (
                 <div className="absolute inset-0 rounded-2xl bg-white/5 animate-pulse" />
               )}
-              
+
               {menuItems.length > 0 && (
-                <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-r from-transparent via-white/10 to-transparent transform -skew-x-12 group-hover:translate-x-full" 
-                     style={{ transition: 'transform 0.8s ease-out, opacity 0.3s ease-out' }} />
+                <div
+                  className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-r from-transparent via-white/10 to-transparent transform -skew-x-12 group-hover:translate-x-full"
+                  style={{
+                    transition:
+                      "transform 0.8s ease-out, opacity 0.3s ease-out",
+                  }}
+                />
               )}
             </button>
-            
+
             {menuItems.length > 0 && (
               <div className="mt-4 text-center">
                 <div className="inline-flex items-center space-x-4 bg-white/10 backdrop-blur-sm rounded-xl px-6 py-2 border border-white/20">
                   <div className="flex items-center space-x-2">
                     <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                    <span className="text-white/80 text-sm font-medium">Live Menu</span>
+                    <span className="text-white/80 text-sm font-medium">
+                      Live Menu
+                    </span>
                   </div>
                   <div className="text-white/60">•</div>
                   <div className="text-white/80 text-sm font-medium">
@@ -392,21 +427,21 @@ export default function LandingPage() {
           .custom-scrollbar::-webkit-scrollbar {
             width: 8px;
           }
-          
+
           .custom-scrollbar::-webkit-scrollbar-track {
             background: rgba(255, 255, 255, 0.1);
             border-radius: 4px;
           }
-          
+
           .custom-scrollbar::-webkit-scrollbar-thumb {
             background: rgba(255, 255, 255, 0.3);
             border-radius: 4px;
           }
-          
+
           .custom-scrollbar::-webkit-scrollbar-thumb:hover {
             background: rgba(255, 255, 255, 0.5);
           }
-          
+
           .custom-scrollbar {
             scrollbar-width: thin;
             scrollbar-color: rgba(255, 255, 255, 0.3) rgba(255, 255, 255, 0.1);
@@ -418,7 +453,6 @@ export default function LandingPage() {
       <footer className="bg-black text-white">
         <div className="max-w-7xl mx-auto px-6 py-12">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            
             <div className="space-y-4">
               <div className="flex items-center space-x-3">
                 <div className="w-10 h-10 bg-gradient-to-r from-orange-500 to-amber-500 rounded-full flex items-center justify-center">
@@ -429,50 +463,53 @@ export default function LandingPage() {
               <p className="text-gray-300 text-sm leading-relaxed max-w-sm">
                 Smart Voice-Enabled Food Ordering Platform for modern dining.
                 <br />
-                Transparent, efficient, and reliable service for all food lovers.
+                Transparent, efficient, and reliable service for all food
+                lovers.
                 <br />
                 Order by Voice, Dine with Joy - Fast & Easy!
               </p>
             </div>
 
             <div>
-              <h4 className="text-lg font-semibold text-white mb-6">Quick Links</h4>
+              <h4 className="text-lg font-semibold text-white mb-6">
+                Quick Links
+              </h4>
               <ul className="space-y-3 text-sm">
                 <li>
-                  <a 
-                    href="/" 
+                  <a
+                    href="/"
                     className="text-gray-300 hover:text-orange-400 transition-colors cursor-pointer block"
                   >
                     Home
                   </a>
                 </li>
                 <li>
-                  <a 
-                    href="/order" 
+                  <a
+                    href="/order"
                     className="text-gray-300 hover:text-orange-400 transition-colors cursor-pointer block"
                   >
                     Place Order
                   </a>
                 </li>
                 <li>
-                  <a 
-                    href="/track" 
+                  <a
+                    href="/track"
                     className="text-gray-300 hover:text-orange-400 transition-colors cursor-pointer block"
                   >
                     Track Order
                   </a>
                 </li>
                 <li>
-                  <a 
-                    href="/menu" 
+                  <a
+                    href="/menu"
                     className="text-gray-300 hover:text-orange-400 transition-colors cursor-pointer block"
                   >
                     Guidelines
                   </a>
                 </li>
                 <li>
-                  <a 
-                    href="/faq" 
+                  <a
+                    href="/faq"
                     className="text-gray-300 hover:text-orange-400 transition-colors cursor-pointer block"
                   >
                     FAQ
@@ -484,18 +521,10 @@ export default function LandingPage() {
             <div>
               <h4 className="text-lg font-semibold text-white mb-6">Support</h4>
               <div className="space-y-3 text-sm">
-                <div className="text-gray-300">
-                  Emergency: 139
-                </div>
-                <div className="text-gray-300">
-                  General: 1800-111-139
-                </div>
-                <div className="text-gray-300">
-                  support@khanabuddy.com
-                </div>
-                <div className="text-gray-300 mt-4">
-                  24/7 Online Support
-                </div>
+                <div className="text-gray-300">Emergency: 139</div>
+                <div className="text-gray-300">General: 1800-111-139</div>
+                <div className="text-gray-300">support@khanabuddy.com</div>
+                <div className="text-gray-300 mt-4">24/7 Online Support</div>
               </div>
             </div>
           </div>
