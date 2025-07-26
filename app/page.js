@@ -493,7 +493,7 @@ export default function LandingPage() {
                 </li>
                 <li>
                   <a
-                    href="/track"
+                    href=""
                     className="text-gray-300 hover:text-orange-400 transition-colors cursor-pointer block"
                   >
                     Track Order
@@ -501,7 +501,7 @@ export default function LandingPage() {
                 </li>
                 <li>
                   <a
-                    href="/menu"
+                    href=""
                     className="text-gray-300 hover:text-orange-400 transition-colors cursor-pointer block"
                   >
                     Guidelines
@@ -509,7 +509,7 @@ export default function LandingPage() {
                 </li>
                 <li>
                   <a
-                    href="/faq"
+                    href=""
                     className="text-gray-300 hover:text-orange-400 transition-colors cursor-pointer block"
                   >
                     FAQ
