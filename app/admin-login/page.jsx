@@ -21,7 +21,7 @@ export default function AdminLogin() {
     // Simple authentication - check credentials
     if (
       credentials.username === "admin" &&
-      credentials.password === "adminqw"
+      credentials.password === "adminasq"
     ) {
       try {
         // Log the successful admin login to Supabase
