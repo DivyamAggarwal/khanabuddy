@@ -389,26 +389,52 @@ export default function InventoryPage() {
   };
 
   // ✅ Enhanced: Delete item with Supabase integration
+  // const handleDeleteItem = async (itemId) => {
+  //   const itemToDelete = menuItems.find(item => item.item_id === itemId);
+  //   if (window.confirm(`Are you sure you want to delete "${itemToDelete?.item_name}"?`)) {
+      
+  //     const result = await deleteInventoryItem(itemId);
+      
+  //     if (result.success) {
+  //       const updatedItems = menuItems.filter(item => item.item_id !== itemId);
+        
+  //       setUpdateAlert(`🗑️ "${itemToDelete?.item_name}" removed from inventory!`);
+  //       setTimeout(() => setUpdateAlert(""), 3000);
+        
+  //       // ✅ CRITICAL: Proper event dispatching for deleted items
+  //       saveMenuItems(updatedItems, 'delete', itemToDelete);
+  //     } else {
+  //       setUpdateAlert("❌ Failed to delete item from database!");
+  //       setTimeout(() => setUpdateAlert(""), 3000);
+  //     }
+  //   }
+  // };
   const handleDeleteItem = async (itemId) => {
-    const itemToDelete = menuItems.find(item => item.item_id === itemId);
-    if (window.confirm(`Are you sure you want to delete "${itemToDelete?.item_name}"?`)) {
+  const itemToDelete = menuItems.find(item => item.item_id === itemId);
+  if (window.confirm(`Are you sure you want to delete "${itemToDelete?.item_name}"?`)) {
+    
+    const result = await deleteInventoryItem(itemId);
+    
+    if (result.success) {
+      const updatedItems = menuItems.filter(item => item.item_id !== itemId);
+      setMenuItems(updatedItems);
       
-      const result = await deleteInventoryItem(itemId);
+      setUpdateAlert(`🗑️ "${itemToDelete?.item_name}" removed from inventory!`);
+      setTimeout(() => setUpdateAlert(""), 3000);
       
-      if (result.success) {
-        const updatedItems = menuItems.filter(item => item.item_id !== itemId);
-        
-        setUpdateAlert(`🗑️ "${itemToDelete?.item_name}" removed from inventory!`);
-        setTimeout(() => setUpdateAlert(""), 3000);
-        
-        // ✅ CRITICAL: Proper event dispatching for deleted items
-        saveMenuItems(updatedItems, 'delete', itemToDelete);
+      saveMenuItems(updatedItems, 'delete', itemToDelete);
+    } else {
+      // Handle foreign key constraint error specifically
+      if (result.error && (result.error.includes('foreign key constraint') || result.error.includes('violates'))) {
+        setUpdateAlert(`❌ Cannot delete "${itemToDelete?.item_name}" - it's referenced in existing orders! Use "Mark as Inactive" instead.`);
       } else {
-        setUpdateAlert("❌ Failed to delete item from database!");
-        setTimeout(() => setUpdateAlert(""), 3000);
+        setUpdateAlert(`❌ Failed to delete: ${result.error}`);
       }
+      setTimeout(() => setUpdateAlert(""), 3000);
     }
-  };
+  }
+};
+
 
   const openEditModal = (item) => {
     setEditingItem(item);
