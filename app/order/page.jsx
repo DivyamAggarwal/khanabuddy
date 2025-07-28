@@ -13,6 +13,10 @@ const END_PHRASES = [
   "murder is done",
   "complete order",
   "order completed",
+  "that's all",
+  "take my order",
+  "my order is finished",
+  "finish order",
 ];
 
 // ✅ NEW: Clear all phrases
