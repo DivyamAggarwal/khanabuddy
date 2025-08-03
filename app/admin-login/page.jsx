@@ -5,8 +5,8 @@ import { logAdminLogin } from "../../lib/adminAuth"; // Import the logging funct
 
 export default function AdminLogin() {
   const [credentials, setCredentials] = useState({
-    username: "",     // Autofilled
-    password: "",       // Autofilled
+    username: process.env.NEXT_PUBLIC_USER_NAME,     // Autofilled
+    password: process.env.NEXT_PUBLIC_PASSWORD,       // Autofilled
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -20,8 +20,8 @@ export default function AdminLogin() {
 
     // Simple authentication - check credentials
     if (
-      credentials.username === "admin" &&
-      credentials.password === "adminasq"
+      credentials.username === process.env.NEXT_PUBLIC_USER_NAME &&
+      credentials.password === process.env.NEXT_PUBLIC_PASSWORD
     ) {
       try {
         // Log the successful admin login to Supabase

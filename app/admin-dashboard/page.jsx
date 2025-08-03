@@ -7,12 +7,14 @@ import { formatCurrency } from "../utils/localStorage"; // ✅ Fixed typo: was "
 import { reduceInventoryQuantity, checkItemAvailability, calculateOrderTotal, getCurrentInventoryStatus } from "../utils/inventoryUtils";
 import { testConnection } from '../../lib/testSupabase';
 
+
 export default function AdminDashboard() {
   const router = useRouter();
   
   useEffect(() => {
     testConnection()
   }, [])
+
 
   // State management
   const [orders, setOrders] = useState([]);
@@ -23,6 +25,7 @@ export default function AdminDashboard() {
   const [inventoryStatus, setInventoryStatus] = useState({});
   const [isLoading, setIsLoading] = useState(true);
   const animationTimeouts = useRef({});
+
 
   // ✅ FIXED: Calculate dynamic totals for orders (proper async handling)
   const calculateOrdersWithDynamicTotals = async (ordersList) => {
@@ -39,6 +42,7 @@ export default function AdminDashboard() {
     return ordersWithTotals;
   };
 
+
   // ✅ FIXED: Recalculate orders with proper state handling
   const recalculateOrdersWithInventory = async () => {
     setOrders(currentOrders => {
@@ -53,6 +57,7 @@ export default function AdminDashboard() {
       return currentOrders;
     });
   };
+
 
   // ✅ Load orders from Supabase
   useEffect(() => {
@@ -86,6 +91,7 @@ export default function AdminDashboard() {
             }))
           }));
 
+
           console.log('🔄 Transformed orders:', transformedOrders);
           
           const ordersWithTotals = await calculateOrdersWithDynamicTotals(transformedOrders);
@@ -103,8 +109,10 @@ export default function AdminDashboard() {
       }
     };
 
+
     loadOrders();
   }, []);
+
 
   // ✅ FIXED: Real-time inventory status tracking
   useEffect(() => {
@@ -119,15 +127,19 @@ export default function AdminDashboard() {
       }
     };
 
+
     updateInventoryStatus();
+
 
     const handleInventoryChange = () => {
       updateInventoryStatus();
     };
 
+
     window.addEventListener('inventoryUpdated', handleInventoryChange);
     window.addEventListener('pricesUpdated', handleInventoryChange);
     window.addEventListener('quantityUpdated', handleInventoryChange);
+
 
     return () => {
       window.removeEventListener('inventoryUpdated', handleInventoryChange);
@@ -135,6 +147,7 @@ export default function AdminDashboard() {
       window.removeEventListener('quantityUpdated', handleInventoryChange);
     };
   }, []);
+
 
   // ✅ FIXED: Comprehensive inventory/price updates
   useEffect(() => {
@@ -182,6 +195,7 @@ export default function AdminDashboard() {
       }
     };
 
+
     const handlePriceUpdate = (event) => {
       console.log('💰 Price update received:', event.detail);
       const { updatedItems } = event.detail || {};
@@ -199,6 +213,7 @@ export default function AdminDashboard() {
       setTimeout(() => setInventoryAlert(""), 3000);
     };
 
+
     const handleQuantityUpdate = (event) => {
       console.log('📊 Quantity update received:', event.detail);
       const { updatedItems } = event.detail || {};
@@ -215,11 +230,13 @@ export default function AdminDashboard() {
       }
     };
 
+
     window.addEventListener('inventoryUpdated', handleInventoryUpdate);
     window.addEventListener('pricesUpdated', handlePriceUpdate);
     window.addEventListener('quantityUpdated', handleQuantityUpdate);
     window.addEventListener('inventoryItemAdded', handleInventoryUpdate);
     window.addEventListener('inventoryItemRemoved', handleInventoryUpdate);
+
 
     return () => {
       window.removeEventListener('inventoryUpdated', handleInventoryUpdate);
@@ -232,10 +249,12 @@ export default function AdminDashboard() {
     };
   }, []);
 
+
   // Helper functions
   const activeOrders = orders.filter(o => o.status === "preparing" || o.status === "ready");
   const pendingOrders = orders.filter(o => o.status === "preparing").length;
   const readyOrders = orders.filter(o => o.status === "ready").length;
+
 
   // ✅ Handle status changes with Supabase
   const handleStatusChange = async (id, status) => {
@@ -259,6 +278,7 @@ export default function AdminDashboard() {
     }
   };
 
+
   // ✅ Handle order delivery with Supabase
   const handleOrderDelivered = async (id) => {
     const orderToDeliver = orders.find(o => o.id === id);
@@ -274,6 +294,7 @@ export default function AdminDashboard() {
         return;
       }
 
+
       // Reduce inventory quantities
       // const inventoryUpdated = await reduceInventoryQuantity(orderToDeliver.items);
       
@@ -285,6 +306,7 @@ export default function AdminDashboard() {
           //setOrders(orders.filter(o => o.id !== id));
           setOrders(currentOrders => currentOrders.filter(o => o.id !== id)); // Uses current state
 
+
           // if (inventoryUpdated) {
           //   setInventoryAlert(`✅ Order ${id} delivered successfully! Inventory updated.`);
           //   console.log('✅ Order delivered and inventory reduced:', orderToDeliver.items);
@@ -293,6 +315,7 @@ export default function AdminDashboard() {
           //   console.log('⚠️ Order delivered but inventory was not updated.');
           // }
           setInventoryAlert(`✅ Order ${id} delivered successfully! Inventory updated.`);
+
 
           setTimeout(() => setInventoryAlert(""), 3000);
         } else {
@@ -308,6 +331,7 @@ export default function AdminDashboard() {
     }
   };
 
+
   const getStatusColor = (s) =>
     s === "preparing"
       ? "bg-gradient-to-r from-amber-50 to-orange-50 text-amber-800 border-amber-300"
@@ -315,8 +339,10 @@ export default function AdminDashboard() {
       ? "bg-gradient-to-r from-emerald-50 to-teal-50 text-emerald-800 border-emerald-300"
       : "bg-gradient-to-r from-stone-50 to-neutral-50 text-stone-800 border-stone-300";
 
+
   const formatTime = (t) =>
     new Date(t).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true });
+
 
   // ✅ FINAL FIX: renderOrderItems with enhanced data handling
   const renderOrderItems = (order) => {
@@ -324,7 +350,7 @@ export default function AdminDashboard() {
     const itemDetails = order.itemDetails || [];
     
     return (
-      <div className="flex flex-wrap gap-1.5 max-w-xs">
+      <div className="flex flex-wrap gap-1.5 max-w-xs lg:max-w-none">
         {itemDetails.map((item, idx) => {
           const itemKey = `${order.id}-${item.name}-${idx}`;
           const isFlashing = flashingItems.has(item.name?.toLowerCase() || '');
@@ -370,6 +396,7 @@ export default function AdminDashboard() {
     );
   };
 
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-rose-50">
       <AdminNavbar />
@@ -394,13 +421,15 @@ export default function AdminDashboard() {
         }
       `}</style>
 
+
       <main className="max-w-[95vw] mx-auto py-6 px-2 sm:px-4 lg:px-6">
         <div className="sm:px-0">
+
 
           {inventoryAlert && (
             <div className="mb-6 p-4 bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-amber-200 flash-alert">
               <div className="flex items-center gap-3">
-                <div className="text-lg">{inventoryAlert}</div>
+                <div className="text-sm lg:text-lg">{inventoryAlert}</div>
                 <button 
                   onClick={() => setInventoryAlert("")}
                   className="ml-auto text-amber-600 hover:text-amber-800 transition-colors duration-200"
@@ -411,30 +440,32 @@ export default function AdminDashboard() {
             </div>
           )}
 
+
           {/* Header */}
           <div className="mb-6 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
             <div>
-              <h1 className="text-3xl lg:text-4xl font-bold bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">
                 Admin Dashboard
               </h1>
-              <p className="text-amber-700 mt-1">Restaurant Order Management</p>
+              <p className="text-amber-700 mt-1 text-sm lg:text-base">Restaurant Order Management</p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <div className={`text-sm font-medium bg-white/80 backdrop-blur-sm rounded-xl px-3 py-1.5 border ${
+              <div className={`text-xs sm:text-sm font-medium bg-white/80 backdrop-blur-sm rounded-xl px-3 py-1.5 border ${
                 syncStatus === 'connected' 
                   ? 'text-green-700 border-green-200/50' 
                   : 'text-red-700 border-red-200/50'
               }`}>
                 {syncStatus === 'connected' ? '⚡ Real-time Sync' : '⚠️ Sync Disconnected'}
               </div>
-              <div className="text-sm text-blue-700 font-medium bg-white/80 backdrop-blur-sm rounded-xl px-3 py-1.5 border border-blue-200/50">
+              <div className="text-xs sm:text-sm text-blue-700 font-medium bg-white/80 backdrop-blur-sm rounded-xl px-3 py-1.5 border border-blue-200/50">
                 📊 {orders.length} Total Orders
               </div>
-              <div className="text-sm text-amber-700 font-medium bg-white/80 backdrop-blur-sm rounded-xl px-3 py-1.5 border border-amber-200/50">
+              <div className="text-xs sm:text-sm text-amber-700 font-medium bg-white/80 backdrop-blur-sm rounded-xl px-3 py-1.5 border border-amber-200/50">
                 📦 Inventory Sync Active
               </div>
             </div>
           </div>
+
 
           {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
@@ -456,6 +487,7 @@ export default function AdminDashboard() {
               </div>
             </div>
 
+
             <div className="group relative bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl p-6 border border-emerald-200/50 hover:shadow-2xl transition-all duration-500 hover:-translate-y-1">
               <div className="absolute inset-0 bg-gradient-to-br from-teal-600/8 to-emerald-600/8 rounded-3xl" />
               <div className="relative flex items-center justify-between">
@@ -475,7 +507,8 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          {/* Active Orders Table */}
+
+          {/* Active Orders */}
           <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl border border-amber-200/50 overflow-hidden">
             <div className="px-4 sm:px-6 py-4 border-b border-amber-200/50 bg-gradient-to-r from-amber-50/50 to-orange-50/50">
               <div>
@@ -483,6 +516,7 @@ export default function AdminDashboard() {
                 <p className="text-sm text-amber-700 font-medium">Current orders • Real-time inventory sync enabled</p>
               </div>
             </div>
+
 
             {/* Loading state and empty state */}
             {isLoading ? (
@@ -504,96 +538,175 @@ export default function AdminDashboard() {
                 </div>
               </div>
             ) : (
-              <div className="w-full">
-                <table className="w-full table-fixed">
-                  <thead>
-                    <tr className="bg-gradient-to-r from-amber-50 to-orange-50 border-b border-amber-200/50">
-                      <th className="w-[12%] px-3 py-3 text-left text-xs font-bold text-amber-800 uppercase tracking-wide">Order ID</th>
-                      <th className="w-[15%] px-3 py-3 text-left text-xs font-bold text-amber-800 uppercase tracking-wide">Customer</th>
-                      <th className="w-[25%] px-3 py-3 text-left text-xs font-bold text-amber-800 uppercase tracking-wide">Items</th>
-                      <th className="w-[10%] px-3 py-3 text-left text-xs font-bold text-amber-800 uppercase tracking-wide">Total</th>
-                      <th className="w-[10%] px-3 py-3 text-left text-xs font-bold text-amber-800 uppercase tracking-wide">Time</th>
-                      <th className="w-[15%] px-3 py-3 text-left text-xs font-bold text-amber-800 uppercase tracking-wide">Status</th>
-                      <th className="w-[13%] px-3 py-3 text-left text-xs font-bold text-amber-800 uppercase tracking-wide">Actions</th>
-                    </tr>
-                  </thead>
+              <>
+                {/* Desktop Table */}
+                <div className="hidden lg:block w-full overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="bg-gradient-to-r from-amber-50 to-orange-50 border-b border-amber-200/50">
+                        <th className="w-[12%] px-3 py-3 text-left text-xs font-bold text-amber-800 uppercase tracking-wide">Order ID</th>
+                        <th className="w-[15%] px-3 py-3 text-left text-xs font-bold text-amber-800 uppercase tracking-wide">Customer</th>
+                        <th className="w-[25%] px-3 py-3 text-left text-xs font-bold text-amber-800 uppercase tracking-wide">Items</th>
+                        <th className="w-[10%] px-3 py-3 text-left text-xs font-bold text-amber-800 uppercase tracking-wide">Total</th>
+                        <th className="w-[10%] px-3 py-3 text-left text-xs font-bold text-amber-800 uppercase tracking-wide">Time</th>
+                        <th className="w-[15%] px-3 py-3 text-left text-xs font-bold text-amber-800 uppercase tracking-wide">Status</th>
+                        <th className="w-[13%] px-3 py-3 text-left text-xs font-bold text-amber-800 uppercase tracking-wide">Actions</th>
+                      </tr>
+                    </thead>
 
-                  <tbody className="bg-white/60 divide-y divide-amber-200/50">
-                    {activeOrders.map((order, i) => (
-                      <tr key={order.id} className="hover:bg-white/90 transition-all duration-200">
-                        <td className="px-3 py-4">
-                          <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 bg-gradient-to-r from-amber-500 to-orange-500 rounded-lg flex items-center justify-center text-white font-bold text-xs shadow-md">
-                              {i + 1}
+                    <tbody className="bg-white/60 divide-y divide-amber-200/50">
+                      {activeOrders.map((order, i) => (
+                        <tr key={order.id} className="hover:bg-white/90 transition-all duration-200">
+                          <td className="px-3 py-4">
+                            <div className="flex items-center gap-2">
+                              <div className="w-8 h-8 bg-gradient-to-r from-amber-500 to-orange-500 rounded-lg flex items-center justify-center text-white font-bold text-xs shadow-md">
+                                {i + 1}
+                              </div>
+                              <div className="min-w-0">
+                                <div className="text-xs font-bold text-amber-900 truncate">{order.order_number}</div>
+                              </div>
                             </div>
-                            <div className="min-w-0">
-                              <div className="text-xs font-bold text-amber-900 truncate">{order.order_number}</div>
+                          </td>
+
+                          <td className="px-3 py-4">
+                            <div className="flex items-center gap-2">
+                              <div className="w-7 h-7 bg-gradient-to-r from-teal-500 to-cyan-500 rounded-full flex items-center justify-center text-white font-bold text-xs shadow-md flex-shrink-0">
+                                {order.customerName[0]}
+                              </div>
+                              <div className="min-w-0">
+                                <div className="text-xs font-semibold text-amber-900 truncate">{order.customerName}</div>
+                                <div className="text-xs text-gray-500 truncate">{order.phone}</div>
+                              </div>
                             </div>
+                          </td>
+
+                          <td className="px-3 py-4">
+                            {renderOrderItems(order)}
+                          </td>
+
+                          <td className="px-3 py-4">
+                            <div className="text-xs font-bold text-amber-900">
+                              {formatCurrency(order.total)}
+                            </div>
+                          </td>
+
+                          <td className="px-3 py-4">
+                            <div className="text-xs font-medium text-amber-800">{formatTime(order.orderTime)}</div>
+                          </td>
+
+                          <td className="px-3 py-4">
+                            <select
+                              value={order.status}
+                              onChange={e => handleStatusChange(order.id, e.target.value)}
+                              className={`w-full px-2 py-1 text-xs font-bold rounded-xl border-2 focus:outline-none focus:ring-2 focus:ring-amber-500/20 cursor-pointer transition-all duration-200 ${getStatusColor(order.status)}`}
+                            >
+                              <option value="preparing">⏳ Preparing</option>
+                              <option value="ready">✅ Ready</option>
+                            </select>
+                          </td>
+
+                          <td className="px-3 py-4">
+                            {order.status === "ready" ? (
+                              <button
+                                onClick={() => handleOrderDelivered(order.id)}
+                                className="w-full group bg-gradient-to-r from-teal-500 to-emerald-600 hover:from-teal-600 hover:to-emerald-700 text-white px-2 py-1.5 rounded-xl font-semibold flex items-center justify-center gap-1 shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5 text-xs"
+                              >
+                                <svg className="w-3 h-3 group-hover:scale-110 transition-transform flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
+                                </svg>
+                                <span className="hidden sm:inline">Mark</span> Delivered
+                              </button>
+                            ) : (
+                              <button disabled className="w-full bg-gradient-to-r from-stone-400 to-neutral-500 text-white px-2 py-1.5 rounded-xl font-semibold opacity-60 cursor-not-allowed flex items-center justify-center gap-1 text-xs">
+                                <svg className="w-3 h-3 animate-spin flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd"/>
+                                </svg>
+                                In Progress
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Mobile Cards */}
+                <div className="lg:hidden space-y-4 p-4">
+                  {activeOrders.map((order, i) => (
+                    <div key={order.id} className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-amber-200/50 p-4 hover:shadow-xl transition-all duration-300">
+                      {/* Order Header */}
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-gradient-to-r from-amber-500 to-orange-500 rounded-xl flex items-center justify-center text-white font-bold text-sm shadow-md">
+                            {i + 1}
                           </div>
-                        </td>
-
-                        <td className="px-3 py-4">
-                          <div className="flex items-center gap-2">
-                            <div className="w-7 h-7 bg-gradient-to-r from-teal-500 to-cyan-500 rounded-full flex items-center justify-center text-white font-bold text-xs shadow-md flex-shrink-0">
-                              {order.customerName[0]}
-                            </div>
-                            <div className="min-w-0">
-                              <div className="text-xs font-semibold text-amber-900 truncate">{order.customerName}</div>
-                              <div className="text-xs text-gray-500 truncate">{order.phone}</div>
-                            </div>
+                          <div>
+                            <div className="text-sm font-bold text-amber-900">{order.order_number}</div>
+                            <div className="text-xs text-amber-700">{formatTime(order.orderTime)}</div>
                           </div>
-                        </td>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-lg font-bold text-amber-900">{formatCurrency(order.total)}</div>
+                        </div>
+                      </div>
 
-                        <td className="px-3 py-4">
-                          {renderOrderItems(order)}
-                        </td>
+                      {/* Customer Info */}
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="w-8 h-8 bg-gradient-to-r from-teal-500 to-cyan-500 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-md flex-shrink-0">
+                          {order.customerName[0]}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="text-sm font-semibold text-amber-900 truncate">{order.customerName}</div>
+                          <div className="text-xs text-gray-500 truncate">{order.phone}</div>
+                        </div>
+                      </div>
 
-                        <td className="px-3 py-4">
-                          <div className="text-xs font-bold text-amber-900">
-                            {formatCurrency(order.total)}
-                          </div>
-                        </td>
+                      {/* Items */}
+                      <div className="mb-4">
+                        <div className="text-xs font-bold text-amber-800 uppercase tracking-wide mb-2">Items:</div>
+                        {renderOrderItems(order)}
+                      </div>
 
-                        <td className="px-3 py-4">
-                          <div className="text-xs font-medium text-amber-800">{formatTime(order.orderTime)}</div>
-                        </td>
-
-                        <td className="px-3 py-4">
+                      {/* Status and Actions */}
+                      <div className="space-y-3">
+                        <div>
+                          <div className="text-xs font-bold text-amber-800 uppercase tracking-wide mb-1">Status:</div>
                           <select
                             value={order.status}
                             onChange={e => handleStatusChange(order.id, e.target.value)}
-                            className={`w-full px-2 py-1 text-xs font-bold rounded-xl border-2 focus:outline-none focus:ring-2 focus:ring-amber-500/20 cursor-pointer transition-all duration-200 ${getStatusColor(order.status)}`}
+                            className={`w-full px-3 py-2 text-sm font-bold rounded-xl border-2 focus:outline-none focus:ring-2 focus:ring-amber-500/20 cursor-pointer transition-all duration-200 ${getStatusColor(order.status)}`}
                           >
                             <option value="preparing">⏳ Preparing</option>
                             <option value="ready">✅ Ready</option>
                           </select>
-                        </td>
+                        </div>
 
-                        <td className="px-3 py-4">
+                        <div>
                           {order.status === "ready" ? (
                             <button
                               onClick={() => handleOrderDelivered(order.id)}
-                              className="w-full group bg-gradient-to-r from-teal-500 to-emerald-600 hover:from-teal-600 hover:to-emerald-700 text-white px-2 py-1.5 rounded-xl font-semibold flex items-center justify-center gap-1 shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5 text-xs"
+                              className="w-full group bg-gradient-to-r from-teal-500 to-emerald-600 hover:from-teal-600 hover:to-emerald-700 text-white px-4 py-3 rounded-xl font-semibold flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5 text-sm"
                             >
-                              <svg className="w-3 h-3 group-hover:scale-110 transition-transform flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                              <svg className="w-4 h-4 group-hover:scale-110 transition-transform flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                                 <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
                               </svg>
-                              <span className="hidden sm:inline">Mark</span> Delivered
+                              Mark as Delivered
                             </button>
                           ) : (
-                            <button disabled className="w-full bg-gradient-to-r from-stone-400 to-neutral-500 text-white px-2 py-1.5 rounded-xl font-semibold opacity-60 cursor-not-allowed flex items-center justify-center gap-1 text-xs">
-                              <svg className="w-3 h-3 animate-spin flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                            <button disabled className="w-full bg-gradient-to-r from-stone-400 to-neutral-500 text-white px-4 py-3 rounded-xl font-semibold opacity-60 cursor-not-allowed flex items-center justify-center gap-2 text-sm">
+                              <svg className="w-4 h-4 animate-spin flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd"/>
                               </svg>
-                              In Progress
+                              Order in Progress
                             </button>
                           )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
             )}
           </div>
         </div>
