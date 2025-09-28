@@ -67,12 +67,12 @@ export default function LandingPage() {
   const loadMenuFromInventory = async () => {
     try {
       setIsLoading(true);
-      console.log("🚀 Loading menu from Supabase...");
+      console.log(" Loading menu from Supabase...");
 
       const result = await loadInventoryItems();
 
       if (result.success && result.data) {
-        console.log("📦 Raw inventory from Supabase:", result.data);
+        console.log(" Raw inventory from Supabase:", result.data);
 
         const dynamicMenu = result.data
           .filter((item) => item.quantity > 0)
@@ -84,14 +84,14 @@ export default function LandingPage() {
           }))
           .sort((a, b) => a.price - b.price);
 
-        console.log("✅ Dynamic menu created from Supabase:", dynamicMenu);
+        console.log(" Dynamic menu created from Supabase:", dynamicMenu);
         setMenuItems(dynamicMenu);
       } else {
-        console.error("❌ Failed to load menu from Supabase:", result.error);
+        console.error(" Failed to load menu from Supabase:", result.error);
         setMenuItems([]);
       }
     } catch (error) {
-      console.error("❌ Error loading menu from Supabase:", error);
+      console.error(" Error loading menu from Supabase:", error);
       setMenuItems([]);
     } finally {
       setIsLoading(false);
@@ -104,7 +104,7 @@ export default function LandingPage() {
 
   useEffect(() => {
     const handleInventoryUpdate = () => {
-      console.log("🔄 Inventory updated, refreshing menu from Supabase...");
+      console.log(" Inventory updated, refreshing menu from Supabase...");
       loadMenuFromInventory();
     };
 
@@ -161,7 +161,7 @@ export default function LandingPage() {
 
         {/* Main Content Container */}
         <div className="relative z-10 min-h-screen flex flex-col items-center justify-center px-4 py-8">
-          {/* ✅ UPDATED: Header Section with Logo and Name Side by Side */}
+          {/*  UPDATED: Header Section with Logo and Name Side by Side */}
           <div className="text-center mb-12">
             <div className="flex justify-center items-center mb-1">
               {/* Logo */}
