@@ -105,7 +105,7 @@ export default function PaymentPage() {
   };
 
   // Save order to admin dashboard and complete payment
-  // ✅ FIXED: Proper quantity handling for admin dashboard
+  //  FIXED: Proper quantity handling for admin dashboard
 // const handleYesClick = () => {
 //   // Create expanded items array that represents actual quantities
 //   const expandedItems = [];
@@ -117,14 +117,14 @@ export default function PaymentPage() {
 //     }
 //   });
 
-//   console.log('💾 Original orderData.items:', orderData.items);
-//   console.log('💾 Expanded items for admin:', expandedItems);
+//   console.log(' Original orderData.items:', orderData.items);
+//   console.log(' Expanded items for admin:', expandedItems);
 
 //   // Create new order for admin dashboard
 //   const newOrder = {
 //     id: `ORD-${Date.now()}`,
 //     customerName: customerDetails.name.trim(),
-//     items: expandedItems, // ✅ Now contains ["pizza", "pizza", "pizza"] for 3 pizzas
+//     items: expandedItems, //  Now contains ["pizza", "pizza", "pizza"] for 3 pizzas
 //     orderTime: new Date().toISOString(),
 //     status: "preparing",
 //     phone: customerDetails.phone.trim(),
@@ -156,11 +156,11 @@ const handleYesClick = async () => {
     }
   });
 
-  console.log('💾 Original orderData.items:', orderData.items);
-  console.log('💾 Expanded items for admin:', expandedItems);
+  console.log(' Original orderData.items:', orderData.items);
+  console.log(' Expanded items for admin:', expandedItems);
 
   try {
-    // ✅ SAVE TO SUPABASE instead of localStorage
+    //  SAVE TO SUPABASE instead of localStorage
     const orderData_supabase = {
       customer_name: customerDetails.name.trim(),
       customer_phone: customerDetails.phone.trim(),
@@ -173,23 +173,23 @@ const handleYesClick = async () => {
       unit_price: item.price
     }));
 
-    console.log('🚀 Saving to Supabase:', { orderData_supabase, orderItems });
+    console.log(' Saving to Supabase:', { orderData_supabase, orderItems });
 
     const result = await createNewOrder(orderData_supabase, orderItems);
     
     if (result.success) {
-      console.log('✅ Order saved to Supabase successfully! Order ID:', result.order.id);
+      console.log(' Order saved to Supabase successfully! Order ID:', result.order.id);
       
       // Clear payment order data
       localStorage.removeItem("orderData");
       
       setPaymentComplete(true);
     } else {
-      console.error('❌ Failed to save order to Supabase:', result.error);
+      console.error(' Failed to save order to Supabase:', result.error);
       alert(`Error saving order: ${result.error}. Please try again.`);
     }
   } catch (error) {
-    console.error('❌ Error saving order to Supabase:', error);
+    console.error(' Error saving order to Supabase:', error);
     alert("Technical error saving order. Please try again.");
   }
 };
@@ -275,7 +275,7 @@ const handleYesClick = async () => {
       {/* Header */}
       <header className="bg-white/90 backdrop-blur shadow-md sticky top-0 z-20 py-4 px-6 flex justify-between items-center border-b border-amber-200">
         <h1 className="text-xl font-bold text-amber-900">
-          💳 KhanaBuddy Payment Gateway
+           KhanaBuddy Payment Gateway
         </h1>
         <button
           onClick={handleGoBack}
