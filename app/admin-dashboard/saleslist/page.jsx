@@ -110,9 +110,9 @@ useEffect(() => {
       const ordersResult = await getDeliveredOrders();
       if (ordersResult.success) {
         setDeliveredOrders(ordersResult.data);
-        console.log('✅ Loaded from Supabase:', ordersResult.data.length, 'orders');
+        console.log(' Loaded from Supabase:', ordersResult.data.length, 'orders');
       } else {
-        console.error('❌ Failed to load orders from Supabase:', ordersResult.error);
+        console.error(' Failed to load orders from Supabase:', ordersResult.error);
         setDeliveredOrders([]);
       }
       
@@ -599,26 +599,26 @@ const handlePrint = () => {
         <div class="stats-grid">
           <div class="stat-card">
             <div class="stat-value">${formatCurrency(totalRevenue)}</div>
-            <div class="stat-label">💰 Total Revenue</div>
+            <div class="stat-label"> Total Revenue</div>
           </div>
           <div class="stat-card">
             <div class="stat-value">${deliveredOrders.length}</div>
-            <div class="stat-label">📦 Total Orders</div>
+            <div class="stat-label"> Total Orders</div>
           </div>
           <div class="stat-card">
             <div class="stat-value">${formatCurrency(avgOrderValue)}</div>
-            <div class="stat-label">📈 Average Order Value</div>
+            <div class="stat-label"> Average Order Value</div>
           </div>
           <div class="stat-card">
             <div class="stat-value">${
               popularItems.filter((item) => item.name !== "No Data Yet").length
             }</div>
-            <div class="stat-label">🍕 Menu Items Sold</div>
+            <div class="stat-label"> Menu Items Sold</div>
           </div>
         </div>
 
         <div class="section">
-          <div class="section-title">📈 Revenue Trends (IST Dates)</div>
+          <div class="section-title"> Revenue Trends (IST Dates)</div>
           <table>
             <thead>
               <tr><th>Period</th><th>Revenue</th><th>Growth</th></tr>
@@ -633,7 +633,7 @@ const handlePrint = () => {
         </div>
 
         <div class="section">
-          <div class="section-title">🏆 Top Items</div>
+          <div class="section-title"> Top Items</div>
           <table>
             <thead>
               <tr><th>Item</th><th>Orders</th><th>Share</th></tr>
@@ -649,7 +649,7 @@ const handlePrint = () => {
         </div>
         ` : `
         <div class="no-data">
-          <h3>📊 No Sales Data Available</h3>
+          <h3> No Sales Data Available</h3>
           <p>Start delivering orders to see analytics here. Your sales data will appear as you complete orders.</p>
         </div>
         `
@@ -690,7 +690,7 @@ const handlePrint = () => {
                 
                 // Reset button state
                 btn.disabled = false;
-                downloadText.textContent = '📥 Download PDF';
+                downloadText.textContent = ' Download PDF';
                 spinner.style.display = 'none';
               }, 1000);
             }, 100);
@@ -700,7 +700,7 @@ const handlePrint = () => {
             
             // Reset button state on error
             btn.disabled = false;
-            downloadText.textContent = '📥 Download PDF';
+            downloadText.textContent = 'Download PDF';
             spinner.style.display = 'none';
             document.querySelector('.button-container').style.display = 'block';
             
