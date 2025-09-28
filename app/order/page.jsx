@@ -19,7 +19,7 @@ const END_PHRASES = [
   "finish order",
 ];
 
-// ✅ NEW: Clear all phrases
+//  NEW: Clear all phrases
 const CLEAR_PHRASES = [
   "clear all",
   "clear everything",
@@ -31,7 +31,7 @@ const CLEAR_PHRASES = [
   "reset order",
 ];
 
-// ✅ NEW: AI question phrases
+//  NEW: AI question phrases
 const AI_QUESTION_PHRASES = [
   "are you an ai",
   "are you artificial intelligence",
@@ -59,25 +59,25 @@ export default function OrderPage() {
   const [cachedInventory, setCachedInventory] = useState([]);
   const [inventoryLoading, setInventoryLoading] = useState(true);
 
-  // ✅ FIXED: Proper inventory loading
+  //  FIXED: Proper inventory loading
   useEffect(() => {
     const loadInventory = async () => {
       try {
         setInventoryLoading(true);
-        console.log("🚀 Loading inventory from Supabase...");
+        console.log(" Loading inventory from Supabase...");
 
         const items = await getInventoryItems();
-        console.log("📦 Loaded items:", items?.length || 0);
+        console.log(" Loaded items:", items?.length || 0);
 
         if (items && Array.isArray(items) && items.length > 0) {
           setCachedInventory(items);
-          console.log("✅ Inventory cached successfully");
+          console.log(" Inventory cached successfully");
         } else {
-          console.warn("⚠️ No inventory items found");
+          console.warn(" No inventory items found");
           setCachedInventory([]);
         }
       } catch (error) {
-        console.error("❌ Error loading inventory:", error);
+        console.error(" Error loading inventory:", error);
         setCachedInventory([]);
       } finally {
         setInventoryLoading(false);
@@ -87,7 +87,7 @@ export default function OrderPage() {
     loadInventory();
   }, []);
 
-  // ✅ FIXED: Inventory checking with proper error handling
+  //  FIXED: Inventory checking with proper error handling
   const checkInventoryItem = (spokenItem) => {
     try {
       if (inventoryLoading) {
@@ -96,13 +96,13 @@ export default function OrderPage() {
       }
 
       if (!cachedInventory || cachedInventory.length === 0) {
-        console.log("❌ No inventory data available");
+        console.log(" No inventory data available");
         return { found: false };
       }
 
       console.log("🔍 Looking for:", spokenItem);
       console.log(
-        "📦 Available inventory:",
+        " Available inventory:",
         cachedInventory.map((i) => i.item_name)
       );
 
@@ -131,7 +131,7 @@ export default function OrderPage() {
       );
 
       if (exactMatch) {
-        console.log("✅ Exact match found:", exactMatch.item_name);
+        console.log(" Exact match found:", exactMatch.item_name);
         bestMatch = exactMatch;
       } else {
         for (const [pattern, variations] of Object.entries(matchingPatterns)) {
@@ -148,7 +148,7 @@ export default function OrderPage() {
 
             if (foundItem) {
               console.log(
-                `✅ Pattern match: "${spokenLower}" → "${foundItem.item_name}"`
+                ` Pattern match: "${spokenLower}" → "${foundItem.item_name}"`
               );
               bestMatch = foundItem;
               break;
@@ -168,10 +168,10 @@ export default function OrderPage() {
         };
       }
 
-      console.log("❌ No match found for:", spokenItem);
+      console.log(" No match found for:", spokenItem);
       return { found: false };
     } catch (error) {
-      console.error("❌ Error checking inventory:", error);
+      console.error(" Error checking inventory:", error);
       return { found: false };
     }
   };
@@ -273,7 +273,7 @@ export default function OrderPage() {
 
     const lower = msg.toLowerCase();
 
-    // ✅ NEW: Check for clear all phrases first
+    //  NEW: Check for clear all phrases first
     if (CLEAR_PHRASES.some((phrase) => lower.includes(phrase))) {
       setMessages((prevMessages) => [
         ...prevMessages,
@@ -295,7 +295,7 @@ export default function OrderPage() {
       return;
     }
 
-    // ✅ NEW: Check for AI questions
+    //  NEW: Check for AI questions
     if (AI_QUESTION_PHRASES.some((phrase) => lower.includes(phrase))) {
       setMessages((prevMessages) => [
         ...prevMessages,
@@ -480,7 +480,7 @@ export default function OrderPage() {
       }
     }
 
-    console.log("🔍 Detected items:", detectedItems);
+    console.log(" Detected items:", detectedItems);
 
     if (detectedItems.length > 0) {
       detectedItems.forEach(({ name, quantity }) => {
@@ -590,7 +590,7 @@ export default function OrderPage() {
       <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-rose-50 px-4 pb-12">
         <header className="bg-white/90 backdrop-blur shadow-md sticky top-0 z-20 py-4 px-6 flex justify-between items-center border-b border-amber-200">
           <h1 className="text-xl font-bold text-amber-900">
-            🍽️ KhanaBuddy Order Assistant
+             KhanaBuddy Order Assistant
           </h1>
           <button
             onClick={handleGoBack}
@@ -619,7 +619,7 @@ export default function OrderPage() {
     <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-rose-50 px-4 pb-12">
       <header className="bg-white/90 backdrop-blur shadow-md sticky top-0 z-20 py-4 px-6 flex justify-between items-center border-b border-amber-200">
         <h1 className="text-xl font-bold text-amber-900">
-          🍽️ KhanaBuddy Order Assistant
+           KhanaBuddy Order Assistant
         </h1>
         <button
           onClick={handleGoBack}
@@ -632,7 +632,7 @@ export default function OrderPage() {
       <div className="max-w-6xl mx-auto mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
         <section className="col-span-2 bg-white rounded-3xl shadow-xl border border-orange-200/50 p-6 space-y-4">
           <h2 className="text-xl font-bold text-amber-900 mb-2">
-            🤖 Chat with KhanaBuddy
+             Chat with KhanaBuddy
           </h2>
 
           <div className="h-80 overflow-y-auto space-y-3 bg-rose-50 border border-rose-100 rounded-xl p-4">
