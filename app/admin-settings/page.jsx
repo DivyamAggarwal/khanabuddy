@@ -42,19 +42,19 @@ export default function AdminSettingsPage() {
   }, []);
 
   const handlePasswordChange = () => {
-    setUpdateAlert("🔐 Password change feature coming soon!");
+    setUpdateAlert(" Password change feature coming soon!");
     setTimeout(() => setUpdateAlert(""), 3000);
   };
 
   const handleExportLogs = () => {
-    setUpdateAlert("📊 Login history exported successfully!");
+    setUpdateAlert(" Login history exported successfully!");
     setTimeout(() => setUpdateAlert(""), 3000);
   };
 
   const handleClearHistory = () => {
     if (window.confirm("Are you sure you want to clear all login history?")) {
       localStorage.removeItem('admin_login_history');
-      setUpdateAlert("🗑️ Login history cleared successfully!");
+      setUpdateAlert(" Login history cleared successfully!");
       setTimeout(() => setUpdateAlert(""), 3000);
       // Refresh stats
       setLoginStats({
