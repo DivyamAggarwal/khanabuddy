@@ -37,15 +37,15 @@ export default function TodayReport() {
       const result = await getTodaysReport();
       if (result.success) {
         setStats(result.data);
-        console.log('✅ Loaded today\'s report:', result.data);
+        console.log(' Loaded today\'s report:', result.data);
       } else {
-        console.error('❌ Failed to load today\'s report:', result.error);
-        setUpdateAlert("❌ Failed to load today's report data!");
+        console.error(' Failed to load today\'s report:', result.error);
+        setUpdateAlert(" Failed to load today's report data!");
         setTimeout(() => setUpdateAlert(""), 3000);
       }
     } catch (error) {
       console.error('Error loading today\'s data:', error);
-      setUpdateAlert("❌ Error loading report data!");
+      setUpdateAlert(" Error loading report data!");
       setTimeout(() => setUpdateAlert(""), 3000);
     } finally {
       setLoading(false);
@@ -56,11 +56,11 @@ export default function TodayReport() {
     if (confirm('Are you sure you want to clear all delivered orders? This action cannot be undone.')) {
       const result = await clearAllDeliveredOrders();
       if (result.success) {
-        setUpdateAlert("✅ All delivered orders cleared successfully!");
+        setUpdateAlert(" All delivered orders cleared successfully!");
         setTimeout(() => setUpdateAlert(""), 3000);
         loadTodayData(); // Refresh the data
       } else {
-        setUpdateAlert("❌ Failed to clear delivered orders!");
+        setUpdateAlert(" Failed to clear delivered orders!");
         setTimeout(() => setUpdateAlert(""), 3000);
       }
     }
