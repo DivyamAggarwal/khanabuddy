@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import AdminNavbar from "../_components/adminNavbar";
 import { loadActiveOrders, markOrderAsDelivered, updateOrderStatus } from "../../lib/orderService";
-import { formatCurrency } from "../utils/localStorage"; // ✅ Fixed typo: was "sformatCurrency"
+import { formatCurrency } from "../utils/localStorage"; //  Fixed typo: was "sformatCurrency"
 import { reduceInventoryQuantity, checkItemAvailability, calculateOrderTotal, getCurrentInventoryStatus } from "../utils/inventoryUtils";
 import { testConnection } from '../../lib/testSupabase';
 
@@ -27,7 +27,7 @@ export default function AdminDashboard() {
   const animationTimeouts = useRef({});
 
 
-  // ✅ FIXED: Calculate dynamic totals for orders (proper async handling)
+  //  FIXED: Calculate dynamic totals for orders (proper async handling)
   const calculateOrdersWithDynamicTotals = async (ordersList) => {
     const ordersWithTotals = await Promise.all(
       ordersList.map(async order => {
@@ -43,7 +43,7 @@ export default function AdminDashboard() {
   };
 
 
-  // ✅ FIXED: Recalculate orders with proper state handling
+  //  FIXED: Recalculate orders with proper state handling
   const recalculateOrdersWithInventory = async () => {
     setOrders(currentOrders => {
       // Start async calculation but don't wait in setState
@@ -59,18 +59,18 @@ export default function AdminDashboard() {
   };
 
 
-  // ✅ Load orders from Supabase
+  //  Load orders from Supabase
   useEffect(() => {
     const loadOrders = async () => {
       try {
         setIsLoading(true);
-        console.log('🚀 Loading orders from Supabase...');
+        console.log(' Loading orders from Supabase...');
         
         const result = await loadActiveOrders();
-        console.log('📊 Supabase result:', result);
+        console.log(' Supabase result:', result);
         
         if (result.success && result.data) {
-          console.log('✅ Raw orders from database:', result.data);
+          console.log(' Raw orders from database:', result.data);
           
           const transformedOrders = result.data.map(order => ({
             id: order.id,
@@ -80,9 +80,9 @@ export default function AdminDashboard() {
             total: parseFloat(order.total_amount),
             orderTime: order.order_time,
             status: order.status,
-            // ✅ Items for inventory calculation (strings)
+            //  Items for inventory calculation (strings)
             items: order.order_items.map(item => item.item_name),
-            // ✅ Detailed items for display (objects)
+            //  Detailed items for display (objects)
             itemDetails: order.order_items.map(item => ({
               name: item.item_name,
               quantity: item.quantity,
@@ -92,17 +92,17 @@ export default function AdminDashboard() {
           }));
 
 
-          console.log('🔄 Transformed orders:', transformedOrders);
+          console.log(' Transformed orders:', transformedOrders);
           
           const ordersWithTotals = await calculateOrdersWithDynamicTotals(transformedOrders);
           console.log('✅ Successfully loaded orders:', ordersWithTotals.length, 'orders');
           setOrders(ordersWithTotals);
         } else {
-          console.log('❌ Failed to load orders:', result.error);
+          console.log(' Failed to load orders:', result.error);
           setOrders([]);
         }
       } catch (error) {
-        console.error('❌ Error loading orders:', error);
+        console.error(' Error loading orders:', error);
         setOrders([]);
       } finally {
         setIsLoading(false);
@@ -114,7 +114,7 @@ export default function AdminDashboard() {
   }, []);
 
 
-  // ✅ FIXED: Real-time inventory status tracking
+  //  FIXED: Real-time inventory status tracking
   useEffect(() => {
     const updateInventoryStatus = async () => {
       try {
@@ -149,13 +149,13 @@ export default function AdminDashboard() {
   }, []);
 
 
-  // ✅ FIXED: Comprehensive inventory/price updates
+  //  FIXED: Comprehensive inventory/price updates
   useEffect(() => {
     const handleInventoryUpdate = (event) => {
       console.log('📦 Inventory update received:', event.detail);
       const { newlyAvailableItems, updatedItems, removedItems } = event.detail || {};
       
-      // ✅ FIXED: Proper async state handling
+      //  FIXED: Proper async state handling
       recalculateOrdersWithInventory();
       
       if (newlyAvailableItems && newlyAvailableItems.length > 0) {
@@ -165,8 +165,8 @@ export default function AdminDashboard() {
           setFlashingItems(prev => new Set([...prev, itemName]));
           
           const alertMessage = item.isNewItem 
-            ? `🎉 New item "${item.name}" added to inventory! Price: ${formatCurrency(item.price)}`
-            : `🔄 "${item.name}" is now back in stock! (${item.quantity} units at ${formatCurrency(item.price)} each)`;
+            ? ` New item "${item.name}" added to inventory! Price: ${formatCurrency(item.price)}`
+            : ` "${item.name}" is now back in stock! (${item.quantity} units at ${formatCurrency(item.price)} each)`;
           
           setInventoryAlert(alertMessage);
           
@@ -186,28 +186,28 @@ export default function AdminDashboard() {
         setTimeout(() => setInventoryAlert(""), 5000);
       } 
       else if (removedItems && removedItems.length > 0) {
-        setInventoryAlert(`⚠️ Items removed from inventory: ${removedItems.join(', ')}`);
+        setInventoryAlert(` Items removed from inventory: ${removedItems.join(', ')}`);
         setTimeout(() => setInventoryAlert(""), 4000);
       }
       else {
-        setInventoryAlert("📦 Inventory updated - Order totals refreshed!");
+        setInventoryAlert(" Inventory updated - Order totals refreshed!");
         setTimeout(() => setInventoryAlert(""), 3000);
       }
     };
 
 
     const handlePriceUpdate = (event) => {
-      console.log('💰 Price update received:', event.detail);
+      console.log(' Price update received:', event.detail);
       const { updatedItems } = event.detail || {};
       
-      // ✅ FIXED: Proper async state handling
+      //  FIXED: Proper async state handling
       recalculateOrdersWithInventory();
       
       if (updatedItems && updatedItems.length > 0) {
         const itemNames = updatedItems.map(item => item.name).join(', ');
-        setInventoryAlert(`💰 Prices updated for: ${itemNames} - Order totals refreshed!`);
+        setInventoryAlert(` Prices updated for: ${itemNames} - Order totals refreshed!`);
       } else {
-        setInventoryAlert("💰 Inventory prices updated - Order totals refreshed!");
+        setInventoryAlert(" Inventory prices updated - Order totals refreshed!");
       }
       
       setTimeout(() => setInventoryAlert(""), 3000);
@@ -215,16 +215,16 @@ export default function AdminDashboard() {
 
 
     const handleQuantityUpdate = (event) => {
-      console.log('📊 Quantity update received:', event.detail);
+      console.log(' Quantity update received:', event.detail);
       const { updatedItems } = event.detail || {};
       
-      // ✅ FIXED: Proper async state handling
+      //  FIXED: Proper async state handling
       recalculateOrdersWithInventory();
       
       if (updatedItems) {
         const lowStockItems = updatedItems.filter(item => item.quantity < 5);
         if (lowStockItems.length > 0) {
-          setInventoryAlert(`⚠️ Low stock alert: ${lowStockItems.map(item => `${item.name} (${item.quantity} left)`).join(', ')}`);
+          setInventoryAlert(` Low stock alert: ${lowStockItems.map(item => `${item.name} (${item.quantity} left)`).join(', ')}`);
           setTimeout(() => setInventoryAlert(""), 5000);
         }
       }
@@ -256,40 +256,40 @@ export default function AdminDashboard() {
   const readyOrders = orders.filter(o => o.status === "ready").length;
 
 
-  // ✅ Handle status changes with Supabase
+  //  Handle status changes with Supabase
   const handleStatusChange = async (id, status) => {
-    console.log(`🔄 Updating order ${id} status to ${status}`);
+    console.log(` Updating order ${id} status to ${status}`);
     
     try {
       const result = await updateOrderStatus(id, status);
       
       if (result.success) {
-        console.log('✅ Status updated in database');
+        console.log(' Status updated in database');
         setOrders(orders.map(o => o.id === id ? { ...o, status } : o));
       } else {
-        console.error('❌ Failed to update status:', result.error);
-        setInventoryAlert(`❌ Failed to update order status: ${result.error}`);
+        console.error(' Failed to update status:', result.error);
+        setInventoryAlert(` Failed to update order status: ${result.error}`);
         setTimeout(() => setInventoryAlert(""), 5000);
       }
     } catch (error) {
-      console.error('❌ Error updating status:', error);
-      setInventoryAlert(`❌ Error updating order status: ${error.message}`);
+      console.error(' Error updating status:', error);
+      setInventoryAlert(` Error updating order status: ${error.message}`);
       setTimeout(() => setInventoryAlert(""), 5000);
     }
   };
 
 
-  // ✅ Handle order delivery with Supabase
+  // Handle order delivery with Supabase
   const handleOrderDelivered = async (id) => {
     const orderToDeliver = orders.find(o => o.id === id);
     if (orderToDeliver) {
-      console.log('🚚 Processing delivery for order:', orderToDeliver);
+      console.log(' Processing delivery for order:', orderToDeliver);
       
       // Check if items are available before delivering
       const unavailableItems = await checkItemAvailability(orderToDeliver.items);
       
       if (unavailableItems.length > 0) {
-        setInventoryAlert(`⚠️ Cannot deliver order ${id}: ${unavailableItems.join(', ')} are not available in inventory.`);
+        setInventoryAlert(` Cannot deliver order ${id}: ${unavailableItems.join(', ')} are not available in inventory.`);
         setTimeout(() => setInventoryAlert(""), 5000);
         return;
       }
@@ -302,30 +302,30 @@ export default function AdminDashboard() {
         const result = await markOrderAsDelivered(id);
         
         if (result.success) {
-          console.log('✅ Order marked as delivered in database');
+          console.log(' Order marked as delivered in database');
           //setOrders(orders.filter(o => o.id !== id));
           setOrders(currentOrders => currentOrders.filter(o => o.id !== id)); // Uses current state
 
 
           // if (inventoryUpdated) {
-          //   setInventoryAlert(`✅ Order ${id} delivered successfully! Inventory updated.`);
-          //   console.log('✅ Order delivered and inventory reduced:', orderToDeliver.items);
+          //   setInventoryAlert(` Order ${id} delivered successfully! Inventory updated.`);
+          //   console.log(' Order delivered and inventory reduced:', orderToDeliver.items);
           // } else {
-          //   setInventoryAlert(`✅ Order ${id} delivered successfully!`);
-          //   console.log('⚠️ Order delivered but inventory was not updated.');
+          //   setInventoryAlert(` Order ${id} delivered successfully!`);
+          //   console.log(' Order delivered but inventory was not updated.');
           // }
-          setInventoryAlert(`✅ Order ${id} delivered successfully! Inventory updated.`);
+          setInventoryAlert(` Order ${id} delivered successfully! Inventory updated.`);
 
 
           setTimeout(() => setInventoryAlert(""), 3000);
         } else {
-          console.error('❌ Failed to deliver order:', result.error);
-          setInventoryAlert(`❌ Failed to deliver order ${id}: ${result.error}`);
+          console.error(' Failed to deliver order:', result.error);
+          setInventoryAlert(` Failed to deliver order ${id}: ${result.error}`);
           setTimeout(() => setInventoryAlert(""), 5000);
         }
       } catch (error) {
-        console.error('❌ Error delivering order:', error);
-        setInventoryAlert(`❌ Error delivering order ${id}: ${error.message}`);
+        console.error(' Error delivering order:', error);
+        setInventoryAlert(` Error delivering order ${id}: ${error.message}`);
         setTimeout(() => setInventoryAlert(""), 5000);
       }
     }
@@ -344,7 +344,7 @@ export default function AdminDashboard() {
     new Date(t).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true });
 
 
-  // ✅ FINAL FIX: renderOrderItems with enhanced data handling
+  //  FINAL FIX: renderOrderItems with enhanced data handling
   const renderOrderItems = (order) => {
     // Use itemDetails from order, with fallback to basic display
     const itemDetails = order.itemDetails || [];
@@ -455,13 +455,13 @@ export default function AdminDashboard() {
                   ? 'text-green-700 border-green-200/50' 
                   : 'text-red-700 border-red-200/50'
               }`}>
-                {syncStatus === 'connected' ? '⚡ Real-time Sync' : '⚠️ Sync Disconnected'}
+                {syncStatus === 'connected' ? ' Real-time Sync' : ' Sync Disconnected'}
               </div>
               <div className="text-xs sm:text-sm text-blue-700 font-medium bg-white/80 backdrop-blur-sm rounded-xl px-3 py-1.5 border border-blue-200/50">
                 📊 {orders.length} Total Orders
               </div>
               <div className="text-xs sm:text-sm text-amber-700 font-medium bg-white/80 backdrop-blur-sm rounded-xl px-3 py-1.5 border border-amber-200/50">
-                📦 Inventory Sync Active
+                 Inventory Sync Active
               </div>
             </div>
           </div>
@@ -527,7 +527,7 @@ export default function AdminDashboard() {
               </div>
             ) : activeOrders.length === 0 ? (
               <div className="p-12 text-center">
-                <div className="text-6xl mb-4">📋</div>
+                <div className="text-6xl mb-4"></div>
                 <h3 className="text-xl font-bold text-amber-900 mb-2">No Active Orders</h3>
                 <p className="text-amber-700 mb-4">New orders will appear here automatically when customers place them.</p>
                 <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 max-w-md mx-auto">
