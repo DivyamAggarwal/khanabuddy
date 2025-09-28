@@ -16,7 +16,7 @@ export default function InventoryPage() {
     min_stock: "5"
   });
 
-  // ✅ Enhanced: Item name mapping for dashboard compatibility
+  //  Enhanced: Item name mapping for dashboard compatibility
   const getDisplayName = (itemName) => {
     const nameMap = {
       'pizza': 'Margherita Pizza',
@@ -37,7 +37,7 @@ export default function InventoryPage() {
     return nameMap[itemName.toLowerCase()] || itemName;
   };
 
-  // ✅ Enhanced: Get current inventory status for dashboard
+  // Enhanced: Get current inventory status for dashboard
   const getCurrentInventoryStatus = () => {
     return menuItems.reduce((status, item) => {
       const displayName = getDisplayName(item.item_name);
@@ -53,7 +53,7 @@ export default function InventoryPage() {
     }, {});
   };
 
-  // ✅ Enhanced: Make getCurrentInventoryStatus globally available
+  // Enhanced: Make getCurrentInventoryStatus globally available
   useEffect(() => {
     // Make function available globally for dashboard
     window.getCurrentInventoryStatus = getCurrentInventoryStatus;
@@ -69,7 +69,7 @@ export default function InventoryPage() {
     loadMenuItems();
   }, []);
 
-  // ✅ Enhanced: Real-time inventory updates integration
+  //  Enhanced: Real-time inventory updates integration
   useEffect(() => {
     const handleInventoryUpdate = () => {
       loadMenuItems();
@@ -107,23 +107,23 @@ export default function InventoryPage() {
   
   if (result.success) {
     setMenuItems(result.data);
-    console.log('✅ Inventory loaded from database:', result.data.length, 'items');
+    console.log(' Inventory loaded from database:', result.data.length, 'items');
   } else {
-    console.error('❌ Failed to load from database:', result.error);
-    setUpdateAlert("❌ Failed to load inventory from database!");
+    console.error(' Failed to load from database:', result.error);
+    setUpdateAlert(" Failed to load inventory from database!");
     setTimeout(() => setUpdateAlert(""), 3000);
   }
 };
 
 
-  // ✅ ENHANCED: Comprehensive event dispatching system - THE KEY FIX
+  // ENHANCED: Comprehensive event dispatching system - THE KEY FIX
   const saveMenuItems = (updatedItems, changeType = 'update', changedItem = null) => {
     const previousItems = [...menuItems];
     
     // Update state immediately for UI responsiveness
     setMenuItems(updatedItems);
     
-    // ✅ Enhanced: Detailed event information for dashboard sync
+    // Enhanced: Detailed event information for dashboard sync
     const newlyAvailableItems = [];
     const updatedItemsInfo = [];
     const removedItems = [];
@@ -178,7 +178,7 @@ export default function InventoryPage() {
       removedItems.push(getDisplayName(changedItem.item_name));
     }
     
-    // ✅ CRITICAL: Dispatch ALL required events for dashboard synchronization
+    // CRITICAL: Dispatch ALL required events for dashboard synchronization
     
     // 1. Main inventory updated event - ALWAYS dispatch this
     const inventoryEventDetail = {
@@ -249,8 +249,8 @@ export default function InventoryPage() {
       }));
     }
     
-    // ✅ Enhanced: Console logging for debugging
-    console.log('✅ All inventory events dispatched successfully:', {
+    // Enhanced: Console logging for debugging
+    console.log(' All inventory events dispatched successfully:', {
       changeType,
       eventsDispatched: [
         'inventoryUpdated',
@@ -314,7 +314,7 @@ export default function InventoryPage() {
     }
   };
 
-  // ✅ Enhanced: Add item with Supabase integration
+  // Enhanced: Add item with Supabase integration
   const handleAddItem = async (e) => {
     e.preventDefault();
     if (!formData.item_name || !formData.price || !formData.quantity) return;
@@ -336,15 +336,15 @@ export default function InventoryPage() {
       setUpdateAlert(`🎉 "${result.data.item_name}" added to inventory with ${result.data.quantity} units!`);
       setTimeout(() => setUpdateAlert(""), 3000);
       
-      // ✅ CRITICAL: Proper event dispatching for new items
+      // CRITICAL: Proper event dispatching for new items
       saveMenuItems(updatedItems, 'add', result.data);
     } else {
-      setUpdateAlert("❌ Failed to add item to database!");
+      setUpdateAlert(" Failed to add item to database!");
       setTimeout(() => setUpdateAlert(""), 3000);
     }
   };
 
-  // ✅ Enhanced: Edit item with Supabase integration
+  // Enhanced: Edit item with Supabase integration
   const handleEditItem = async (e) => {
     e.preventDefault();
     if (!formData.item_name || !formData.price || !formData.quantity) return;
@@ -374,21 +374,21 @@ export default function InventoryPage() {
       setEditingItem(null);
       
       if (wasOutOfStock && isNowInStock) {
-        setUpdateAlert(`🎉 "${updatedItem.item_name}" is now back in stock with ${newQuantity} units!`);
+        setUpdateAlert(` "${updatedItem.item_name}" is now back in stock with ${newQuantity} units!`);
       } else {
-        setUpdateAlert(`✅ "${updatedItem.item_name}" updated successfully!`);
+        setUpdateAlert(` "${updatedItem.item_name}" updated successfully!`);
       }
       setTimeout(() => setUpdateAlert(""), 3000);
       
-      // ✅ CRITICAL: Proper event dispatching for edited items
+      // CRITICAL: Proper event dispatching for edited items
       saveMenuItems(updatedItems, 'edit', updatedItem);
     } else {
-      setUpdateAlert("❌ Failed to update item in database!");
+      setUpdateAlert(" Failed to update item in database!");
       setTimeout(() => setUpdateAlert(""), 3000);
     }
   };
 
-  // ✅ Enhanced: Delete item with Supabase integration
+  //  Enhanced: Delete item with Supabase integration
   // const handleDeleteItem = async (itemId) => {
   //   const itemToDelete = menuItems.find(item => item.item_id === itemId);
   //   if (window.confirm(`Are you sure you want to delete "${itemToDelete?.item_name}"?`)) {
@@ -398,13 +398,13 @@ export default function InventoryPage() {
   //     if (result.success) {
   //       const updatedItems = menuItems.filter(item => item.item_id !== itemId);
         
-  //       setUpdateAlert(`🗑️ "${itemToDelete?.item_name}" removed from inventory!`);
+  //       setUpdateAlert(` "${itemToDelete?.item_name}" removed from inventory!`);
   //       setTimeout(() => setUpdateAlert(""), 3000);
         
-  //       // ✅ CRITICAL: Proper event dispatching for deleted items
+  //       // CRITICAL: Proper event dispatching for deleted items
   //       saveMenuItems(updatedItems, 'delete', itemToDelete);
   //     } else {
-  //       setUpdateAlert("❌ Failed to delete item from database!");
+  //       setUpdateAlert(" Failed to delete item from database!");
   //       setTimeout(() => setUpdateAlert(""), 3000);
   //     }
   //   }
@@ -426,9 +426,9 @@ export default function InventoryPage() {
     } else {
       // Handle foreign key constraint error specifically
       if (result.error && (result.error.includes('foreign key constraint') || result.error.includes('violates'))) {
-        setUpdateAlert(`❌ Cannot delete "${itemToDelete?.item_name}" - it's referenced in existing orders! Use "Mark as Inactive" instead.`);
+        setUpdateAlert(` Cannot delete "${itemToDelete?.item_name}" - it's referenced in existing orders! Use "Mark as Inactive" instead.`);
       } else {
-        setUpdateAlert(`❌ Failed to delete: ${result.error}`);
+        setUpdateAlert(` Failed to delete: ${result.error}`);
       }
       setTimeout(() => setUpdateAlert(""), 3000);
     }
@@ -474,7 +474,7 @@ export default function InventoryPage() {
       <main className="max-w-7xl mx-auto py-8 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0">
 
-          {/* ✅ Enhanced: Update Alert with better styling */}
+          {/*  Enhanced: Update Alert with better styling */}
           {updateAlert && (
             <div className="mb-6 p-4 bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-amber-200 animate-pulse">
               <div className="flex items-center gap-3">
